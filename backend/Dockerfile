@@ -9,12 +9,13 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv package manager
 RUN pip install uv
 
-# Copy dependency files
+# Copy dependency files first for better caching
 COPY pyproject.toml ./
 
 # Install Python dependencies

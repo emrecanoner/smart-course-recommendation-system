@@ -5,7 +5,7 @@ description = "AI-powered course recommendation system backend"
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
 ]
-readme = "README.md"
+# readme = "README.md"  # Commented out since README.md is in parent directory
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.104.1",
@@ -43,6 +43,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
 
 [tool.black]
 line-length = 88
