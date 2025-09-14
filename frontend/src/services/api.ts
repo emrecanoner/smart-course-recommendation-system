@@ -1,0 +1,162 @@
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { 
+  User, 
+  LoginRequest, 
+  RegisterRequest, 
+  AuthResponse, 
+  Course, 
+  Recommendation,
+  RecommendationRequest,
+  ApiResponse 
+} from '../types';
+
+// API Configuration
+const API_BASE_URL = 'http://localhost:8000/api/v1';
+
+class ApiService {
+  private api: AxiosInstance;
+
+  constructor() {
+    this.api = axios.create({
+      baseURL: API_BASE_URL,
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Request interceptor to add auth token
+    this.api.interceptors.request.use(
+      (config) => {
+        const token = this.getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Response interceptor to handle errors
+    this.api.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          // Handle unauthorized access
+          this.clearToken();
+          // You might want to redirect to login here
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  // Token management
+  private getToken(): string | null {
+    // In a real app, you'd get this from secure storage
+    return localStorage.getItem('auth_token');
+  }
+
+  private setToken(token: string): void {
+    localStorage.setItem('auth_token', token);
+  }
+
+  private clearToken(): void {
+    localStorage.removeItem('auth_token');
+  }
+
+  // Authentication endpoints
+  async login(credentials: LoginRequest): Promise<AuthResponse> {
+    const formData = new FormData();
+    formData.append('username', credentials.username);
+    formData.append('password', credentials.password);
+
+    const response: AxiosResponse<AuthResponse> = await this.api.post('/auth/login', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    if (response.data.access_token) {
+      this.setToken(response.data.access_token);
+    }
+
+    return response.data;
+  }
+
+  async register(userData: RegisterRequest): Promise<User> {
+    const response: AxiosResponse<User> = await this.api.post('/auth/register', userData);
+    return response.data;
+  }
+
+  async getCurrentUser(): Promise<User> {
+    const response: AxiosResponse<User> = await this.api.get('/auth/test-token');
+    return response.data;
+  }
+
+  // User endpoints
+  async updateUser(userData: Partial<User>): Promise<User> {
+    const response: AxiosResponse<User> = await this.api.put('/users/me', userData);
+    return response.data;
+  }
+
+  // Course endpoints
+  async getCourses(params?: {
+    skip?: number;
+    limit?: number;
+    category?: string;
+    search?: string;
+  }): Promise<Course[]> {
+    const response: AxiosResponse<Course[]> = await this.api.get('/courses/', { params });
+    return response.data;
+  }
+
+  async getCourse(courseId: number): Promise<Course> {
+    const response: AxiosResponse<Course> = await this.api.get(`/courses/${courseId}`);
+    return response.data;
+  }
+
+  // Recommendation endpoints
+  async getRecommendations(params?: {
+    limit?: number;
+    algorithm?: string;
+  }): Promise<Recommendation[]> {
+    const response: AxiosResponse<Recommendation[]> = await this.api.get('/recommendations/', { params });
+    return response.data;
+  }
+
+  async generateRecommendations(request: RecommendationRequest): Promise<Recommendation[]> {
+    const response: AxiosResponse<Recommendation[]> = await this.api.post('/recommendations/', request);
+    return response.data;
+  }
+
+  async submitRecommendationFeedback(courseId: number, feedbackType: string): Promise<void> {
+    await this.api.post('/recommendations/feedback', null, {
+      params: { course_id: courseId, feedback_type: feedbackType },
+    });
+  }
+
+  async getSimilarCourses(courseId: number, limit?: number): Promise<Recommendation[]> {
+    const response: AxiosResponse<Recommendation[]> = await this.api.get(`/recommendations/similar/${courseId}`, {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  // Health check
+  async healthCheck(): Promise<{ status: string }> {
+    const response: AxiosResponse<{ status: string }> = await this.api.get('/health');
+    return response.data;
+  }
+
+  // Logout
+  logout(): void {
+    this.clearToken();
+  }
+}
+
+// Export singleton instance
+export const apiService = new ApiService();
+export default apiService;
