@@ -1,0 +1,68 @@
+# Smart Course Recommendation System - Project Rules
+
+## Project Overview
+This is an AI-powered course recommendation system that helps users discover relevant courses based on their preferences, learning history, and behavior patterns.
+
+## Technology Stack
+- **Frontend**: React Native (mobile-first approach)
+- **Backend**: Python (FastAPI or Flask)
+- **Package Management**: uv (for Python dependencies)
+- **Database**: PostgreSQL (containerized with Docker)
+- **AI/ML**: Python-based recommendation algorithms
+- **Language**: All code, comments, and documentation must be in English
+
+## Project Requirements
+1. **AI-Powered Recommendation System**: Must implement machine learning algorithms for course recommendations
+2. **High Code Quality**: Follow best practices, proper error handling, and clean architecture
+3. **Web-Based**: Primary interface should be web-accessible
+4. **Scalable Architecture**: Design for future growth and data warehouse implementation
+5. **Step-by-Step Development**: Implement features incrementally to catch and fix errors early
+
+## Development Guidelines
+- Use English for all code, comments, documentation, and variable names
+- Follow clean code principles and SOLID design patterns
+- Implement proper error handling and logging
+- Use type hints in Python code
+- Follow React Native best practices for mobile development
+- Implement proper database migrations and schema management
+- Use Docker for consistent development environment
+
+## Database Strategy
+- Start with core tables for basic functionality
+- Plan for future data warehouse implementation
+- Use PostgreSQL with proper indexing and relationships
+- Implement proper data validation and constraints
+
+## File Structure
+- Maintain organized project structure
+- Separate concerns (frontend, backend, database, AI/ML)
+- Use proper naming conventions
+- Keep configuration files organized
+
+## AI/ML Requirements
+- Implement collaborative filtering algorithms
+- Use content-based filtering for course recommendations
+- Consider hybrid recommendation approaches
+- Plan for real-time recommendation updates
+- Implement user behavior tracking and analysis
+
+## Quality Assurance
+- Write unit tests for critical functionality
+- Implement integration tests for API endpoints
+- Use linting and formatting tools
+- Follow security best practices
+- Implement proper authentication and authorization
+
+## Development Workflow
+- Use version control (Git) with meaningful commit messages
+- Implement feature branches for new development
+- Use pull requests for code review
+- Maintain documentation for API endpoints and database schema
+- Test thoroughly before deployment
+
+## Future Considerations
+- Plan for data warehouse implementation
+- Consider microservices architecture for scalability
+- Implement caching strategies for performance
+- Plan for real-time analytics and reporting
+- Consider mobile app deployment strategies
