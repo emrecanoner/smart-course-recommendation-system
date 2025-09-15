@@ -1,7 +1,28 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import LoadingComponent from '../components/LoadingComponent';
 
 const ProfileScreen: React.FC = () => {
+  const [showPageLoading, setShowPageLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    // Show page loading for 1.5 seconds
+    const timer = setTimeout(() => {
+      setShowPageLoading(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show loading screen when page opens
+  if (showPageLoading) {
+    return (
+      <LoadingComponent 
+        visible={true}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>

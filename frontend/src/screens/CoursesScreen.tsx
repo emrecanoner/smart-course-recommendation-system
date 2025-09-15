@@ -16,6 +16,7 @@ import { fetchCourses, clearCourses } from '../store/slices/courseSlice';
 import { Course } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import LoadingComponent from '../components/LoadingComponent';
 
 interface CoursesScreenProps {
   navigation: any;
@@ -27,6 +28,7 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
+  const [showPageLoading, setShowPageLoading] = React.useState(true);
 
   const categories = [
     'All',
@@ -41,6 +43,13 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
 
   useEffect(() => {
     dispatch(fetchCourses());
+    
+    // Show page loading for 1.5 seconds
+    const timer = setTimeout(() => {
+      setShowPageLoading(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
   }, [dispatch]);
 
   const handleRefresh = async () => {
@@ -136,6 +145,15 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
       </Text>
     </TouchableOpacity>
   );
+
+  // Show loading screen when page opens
+  if (showPageLoading) {
+    return (
+      <LoadingComponent 
+        visible={true}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

@@ -14,6 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { registerUser, clearError } from '../store/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
+import LoadingComponent from '../components/LoadingComponent';
 
 interface RegisterScreenProps {
   navigation: any;
@@ -31,6 +32,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [touched, setTouched] = useState<{[key: string]: boolean}>({});
+  const [showSuccessLoading, setShowSuccessLoading] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, error } = useSelector((state: RootState) => state.auth);
@@ -133,30 +135,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         full_name: formData.fullName || undefined,
       })).unwrap();
       
-      console.log('Register result:', result);
+      // Show success loading for 1.5 seconds then navigate
+      setShowSuccessLoading(true);
       
-      // Show success message and navigate to login
-      console.log('Showing success alert...');
-      Alert.alert(
-        'Success',
-        'Account created successfully! Please sign in.',
-        [{ 
-          text: 'OK',
-          onPress: () => {
-            console.log('Navigating to Login...');
-            // Navigate to login screen after successful registration
-            navigation.navigate('Login');
-          }
-        }]
-      );
-      
-      // Direct navigation as backup (in case alert onPress doesn't work)
-      console.log('Direct navigation to Login...');
+      // Navigate to login after 1.5 seconds
       setTimeout(() => {
+        setShowSuccessLoading(false);
         navigation.navigate('Login');
-      }, 1000); // 1 second delay to allow user to see the alert
+      }, 1500);
     } catch (error) {
-      console.log('Register error:', error);
       // Error will be shown in UI via Redux state
       // Don't navigate anywhere on error - stay on current screen
       // Error will be displayed in UI via Redux state
@@ -167,6 +154,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     dispatch(clearError()); // Clear error before navigating
     navigation.navigate('Login');
   };
+
+  // Show loading screen after successful registration
+  if (showSuccessLoading) {
+    return (
+      <LoadingComponent 
+        visible={true}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -468,10 +464,11 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   fieldErrorText: {
-    fontSize: 12,
     color: '#ff6b6b',
+    fontSize: 14,
     marginTop: 6,
     marginLeft: 4,
+    fontWeight: '500',
   },
   registerButton: {
     backgroundColor: '#667eea',

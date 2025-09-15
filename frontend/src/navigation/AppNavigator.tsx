@@ -1,6 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Easing, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
@@ -25,34 +23,31 @@ const AppNavigator: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, isLoading, isRegistering } = useSelector((state: RootState) => state.auth);
   const navigationRef = useRef<any>(null);
+  const [isInitializing, setIsInitializing] = React.useState(true);
   
-  // Show loading screen only when checking authentication (not during register/login)
-  const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
-  const spinValue = useRef(new Animated.Value(0)).current;
 
-  // Navigate to Home when authenticated
+  // Check authentication on app start
   useEffect(() => {
-    if (isAuthenticated && !isLoading && !isCheckingAuth && navigationRef.current) {
-      navigationRef.current.navigate('Home');
-    }
-  }, [isAuthenticated, isLoading, isCheckingAuth]);
-  
-  useEffect(() => {
-    // Check if user is already authenticated
     const token = localStorage.getItem('auth_token');
-    
     if (token) {
       dispatch(getCurrentUser()).finally(() => {
-        setIsCheckingAuth(false);
+        setIsInitializing(false);
       });
     } else {
-      setIsCheckingAuth(false);
+      setIsInitializing(false);
     }
   }, [dispatch]);
 
-  // Navigate to Login when not authenticated (only on initial load, not during register)
+  // Navigate to Home when authenticated
   useEffect(() => {
-    if (!isAuthenticated && !isLoading && !isCheckingAuth && !isRegistering && navigationRef.current) {
+    if (isAuthenticated && !isLoading && !isInitializing && navigationRef.current) {
+      navigationRef.current.navigate('Home');
+    }
+  }, [isAuthenticated, isLoading, isInitializing]);
+
+  // Navigate to Login when not authenticated (only after initialization)
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading && !isRegistering && !isInitializing && navigationRef.current) {
       // Check current route to prevent navigation from Register screen
       const currentRoute = navigationRef.current.getCurrentRoute();
       
@@ -60,51 +55,16 @@ const AppNavigator: React.FC = () => {
         navigationRef.current.navigate('Login');
       }
     }
-  }, [isAuthenticated, isLoading, isCheckingAuth, isRegistering]);
+  }, [isAuthenticated, isLoading, isRegistering, isInitializing]);
 
   // Prevent navigation state changes during error handling
   const onStateChange = (state: any) => {
     // Navigation state change handler
   };
 
-  // Start spinning animation
-  useEffect(() => {
-    if (isCheckingAuth) {
-      const spin = Animated.loop(
-        Animated.timing(spinValue, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      );
-      spin.start();
-      return () => spin.stop();
-    }
-  }, [isCheckingAuth, spinValue]);
-
-  const spin = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  if (isCheckingAuth) {
-    return (
-      <View style={styles.loadingContainer}>
-        <View style={styles.loadingContent}>
-          <Animated.View style={[styles.iconContainer, { transform: [{ rotate: spin }] }]}>
-            <Ionicons name="school" size={60} color="#667eea" />
-          </Animated.View>
-          <Text style={styles.loadingTitle}>Smart Course</Text>
-          <Text style={styles.loadingSubtitle}>Loading your learning experience...</Text>
-          <View style={styles.loadingDots}>
-            <View style={[styles.dot, styles.dot1]} />
-            <View style={[styles.dot, styles.dot2]} />
-            <View style={[styles.dot, styles.dot3]} />
-          </View>
-        </View>
-      </View>
-    );
+  // Don't render anything during initialization
+  if (isInitializing) {
+    return null;
   }
 
   return (
@@ -136,52 +96,5 @@ const AppNavigator: React.FC = () => {
     </NavigationContainer>
   );
 };
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-  },
-  loadingContent: {
-    alignItems: 'center',
-  },
-  iconContainer: {
-    marginBottom: 20,
-  },
-  loadingTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#667eea',
-    marginBottom: 10,
-  },
-  loadingSubtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  loadingDots: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#667eea',
-    marginHorizontal: 4,
-  },
-  dot1: {
-    opacity: 0.4,
-  },
-  dot2: {
-    opacity: 0.7,
-  },
-  dot3: {
-    opacity: 1,
-  },
-});
 
 export default AppNavigator;

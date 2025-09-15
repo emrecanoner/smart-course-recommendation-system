@@ -13,6 +13,7 @@ import { fetchRecommendations } from '../store/slices/recommendationSlice';
 import { logout } from '../store/slices/authSlice';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import LoadingComponent from '../components/LoadingComponent';
 
 interface HomeScreenProps {
   navigation: any;
@@ -22,10 +23,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { recommendations, isLoading } = useSelector((state: RootState) => state.recommendations) as { recommendations: any[], isLoading: boolean };
+  const [showPageLoading, setShowPageLoading] = React.useState(true);
 
   useEffect(() => {
     // Fetch recommendations when component mounts
     dispatch(fetchRecommendations({ limit: 5 }));
+    
+    // Show page loading for 1.5 seconds
+    const timer = setTimeout(() => {
+      setShowPageLoading(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
   }, [dispatch]);
 
   const handleLogout = () => {
@@ -45,6 +54,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const handleNavigateToProfile = () => {
     navigation.navigate('Profile');
   };
+
+  // Show loading screen when page opens
+  if (showPageLoading) {
+    return (
+      <LoadingComponent 
+        visible={true}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

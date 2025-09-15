@@ -14,6 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { loginUser, clearError } from '../store/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
+import LoadingComponent from '../components/LoadingComponent';
 
 interface LoginScreenProps {
   navigation: any;
@@ -26,6 +27,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+
 
   // Remove automatic navigation - handle it only in handleLogin
 
@@ -42,11 +44,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     try {
       await dispatch(loginUser({ username: email, password })).unwrap();
-      // Navigate to Home only after successful login
+      // Navigate to Home after successful login
       navigation.navigate('Home');
     } catch (error) {
       // Error will be handled by Redux state
-      console.error('Login error:', error);
     }
   };
 
@@ -54,6 +55,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     dispatch(clearError()); // Clear error before navigating
     navigation.navigate('Register');
   };
+
 
   return (
     <View style={styles.container}>
