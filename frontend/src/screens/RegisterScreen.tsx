@@ -35,16 +35,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, error } = useSelector((state: RootState) => state.auth);
 
-  // Clear error when component mounts
-  useEffect(() => {
-    dispatch(clearError());
-  }, [dispatch]);
-
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
+    // Clear validation errors when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+    // Clear Redux error when user starts typing
+    if (error) {
+      dispatch(clearError());
     }
   };
 
@@ -118,7 +117,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   };
 
   const handleRegister = async () => {
-    if (!validateForm()) return;
+    // Validate form first
+    if (!validateForm()) {
+      return;
+    }
 
     // Clear any previous errors
     dispatch(clearError());
@@ -131,22 +133,23 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         full_name: formData.fullName || undefined,
       })).unwrap();
       
-      // Only navigate to login if registration was successful
+      // Show success message without auto-navigation
       if (result) {
         Alert.alert(
           'Success',
           'Account created successfully! Please sign in.',
-          [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+          [{ text: 'OK' }]
         );
       }
     } catch (error) {
       // Error will be shown in UI via Redux state
-      console.error('Registration error:', error);
-      // Don't navigate to login on error
+      // Don't navigate anywhere on error - stay on current screen
+      // Error will be displayed in UI via Redux state
     }
   };
 
   const handleLogin = () => {
+    dispatch(clearError()); // Clear error before navigating
     navigation.navigate('Login');
   };
 
@@ -177,12 +180,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
 
             {/* Register Form */}
             <View style={styles.form}>
+              {/* Email Input */}
               <View style={styles.inputGroup}>
                 <View style={[
                   styles.inputContainer,
                   touched.email && errors.email && styles.inputError
                 ]}>
-                  <Ionicons name="mail" size={20} color={touched.email && errors.email ? "#ff6b6b" : "#666"} style={styles.inputIcon} />
+                  <Ionicons 
+                    name="mail" 
+                    size={20} 
+                    color={touched.email && errors.email ? "#ff6b6b" : "#666"} 
+                    style={styles.inputIcon} 
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="Email *"
@@ -197,16 +206,24 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   />
                 </View>
                 {touched.email && errors.email && (
-                  <Text style={styles.errorText}>{errors.email}</Text>
+                  <View>
+                    <Text style={styles.fieldErrorText}>{errors.email}</Text>
+                  </View>
                 )}
               </View>
 
+              {/* Username Input */}
               <View style={styles.inputGroup}>
                 <View style={[
                   styles.inputContainer,
                   touched.username && errors.username && styles.inputError
                 ]}>
-                  <Ionicons name="person" size={20} color={touched.username && errors.username ? "#ff6b6b" : "#666"} style={styles.inputIcon} />
+                  <Ionicons 
+                    name="person" 
+                    size={20} 
+                    color={touched.username && errors.username ? "#ff6b6b" : "#666"} 
+                    style={styles.inputIcon} 
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="Username *"
@@ -220,13 +237,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   />
                 </View>
                 {touched.username && errors.username && (
-                  <Text style={styles.errorText}>{errors.username}</Text>
+                  <View>
+                    <Text style={styles.fieldErrorText}>{errors.username}</Text>
+                  </View>
                 )}
               </View>
 
+              {/* Full Name Input */}
               <View style={styles.inputGroup}>
                 <View style={styles.inputContainer}>
-                  <Ionicons name="person-circle" size={20} color="#666" style={styles.inputIcon} />
+                  <Ionicons 
+                    name="person-circle" 
+                    size={20} 
+                    color="#666" 
+                    style={styles.inputIcon} 
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="Full Name"
@@ -239,12 +264,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 </View>
               </View>
 
+              {/* Password Input */}
               <View style={styles.inputGroup}>
                 <View style={[
                   styles.inputContainer,
                   touched.password && errors.password && styles.inputError
                 ]}>
-                  <Ionicons name="lock-closed" size={20} color={touched.password && errors.password ? "#ff6b6b" : "#666"} style={styles.inputIcon} />
+                  <Ionicons 
+                    name="lock-closed" 
+                    size={20} 
+                    color={touched.password && errors.password ? "#ff6b6b" : "#666"} 
+                    style={styles.inputIcon} 
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="Password *"
@@ -269,16 +300,24 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
                 {touched.password && errors.password && (
-                  <Text style={styles.errorText}>{errors.password}</Text>
+                  <View>
+                    <Text style={styles.fieldErrorText}>{errors.password}</Text>
+                  </View>
                 )}
               </View>
 
+              {/* Confirm Password Input */}
               <View style={styles.inputGroup}>
                 <View style={[
                   styles.inputContainer,
                   touched.confirmPassword && errors.confirmPassword && styles.inputError
                 ]}>
-                  <Ionicons name="lock-closed" size={20} color={touched.confirmPassword && errors.confirmPassword ? "#ff6b6b" : "#666"} style={styles.inputIcon} />
+                  <Ionicons 
+                    name="lock-closed" 
+                    size={20} 
+                    color={touched.confirmPassword && errors.confirmPassword ? "#ff6b6b" : "#666"} 
+                    style={styles.inputIcon} 
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="Confirm Password *"
@@ -303,10 +342,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
                 {touched.confirmPassword && errors.confirmPassword && (
-                  <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+                  <View>
+                    <Text style={styles.fieldErrorText}>{errors.confirmPassword}</Text>
+                  </View>
                 )}
               </View>
 
+              {/* Register Button */}
               <TouchableOpacity
                 style={[styles.registerButton, isLoading && styles.disabledButton]}
                 onPress={handleRegister}
@@ -317,6 +359,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 </Text>
               </TouchableOpacity>
 
+              {/* Login Button */}
               <TouchableOpacity
                 style={styles.loginButton}
                 onPress={handleLogin}
@@ -409,7 +452,7 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 8,
   },
-  errorText: {
+  fieldErrorText: {
     fontSize: 12,
     color: '#ff6b6b',
     marginTop: 6,

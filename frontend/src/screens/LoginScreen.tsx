@@ -27,17 +27,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
-  // Navigate to Home when authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigation.navigate('Home');
-    }
-  }, [isAuthenticated, navigation]);
+  // Remove automatic navigation - handle it only in handleLogin
 
-  // Clear error when component mounts
-  useEffect(() => {
-    dispatch(clearError());
-  }, [dispatch]);
+  // Don't clear error on mount - let it persist until user tries again
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -50,7 +42,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     try {
       await dispatch(loginUser({ username: email, password })).unwrap();
-      // Navigation will be handled by the navigation logic
+      // Navigate to Home only after successful login
+      navigation.navigate('Home');
     } catch (error) {
       // Error will be handled by Redux state
       console.error('Login error:', error);
@@ -58,6 +51,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   const handleRegister = () => {
+    dispatch(clearError()); // Clear error before navigating
     navigation.navigate('Register');
   };
 
@@ -95,7 +89,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   placeholder="Email"
                   placeholderTextColor="#999"
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (error) dispatch(clearError()); // Clear error when user starts typing
+                  }}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -110,7 +107,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   placeholder="Password"
                   placeholderTextColor="#999"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (error) dispatch(clearError()); // Clear error when user starts typing
+                  }}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}

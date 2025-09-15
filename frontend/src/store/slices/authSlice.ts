@@ -108,11 +108,17 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
+        // Don't set user or isAuthenticated after registration
+        // User needs to login separately
+        state.user = null;
+        state.isAuthenticated = false;
         state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
         state.error = action.payload as string;
       })
       // Get current user

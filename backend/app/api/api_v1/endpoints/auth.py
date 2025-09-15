@@ -58,7 +58,24 @@ def register_user(
     
     # Create new user
     user = user_service.create(obj_in=user_in)
-    return user
+    
+    # Convert datetime fields to ISO format strings for response
+    user_data = {
+        "id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "full_name": user.full_name,
+        "is_active": user.is_active,
+        "bio": user.bio,
+        "learning_goals": user.learning_goals,
+        "preferred_categories": user.preferred_categories,
+        "skill_level": user.skill_level,
+        "time_commitment": user.time_commitment,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+        "last_login": user.last_login.isoformat() if user.last_login else None,
+    }
+    return user_data
 
 
 @router.post("/login", response_model=Token)
