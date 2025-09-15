@@ -23,7 +23,10 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
         "http://localhost:3000",
         "http://localhost:8080",
+        "http://localhost:8081",  # Expo development server
         "http://localhost:19006",  # React Native web
+        "http://127.0.0.1:8081",  # Alternative localhost
+        "http://192.168.1.40:8081",  # Network IP for mobile testing
     ]
     
     @validator("BACKEND_CORS_ORIGINS", pre=True)

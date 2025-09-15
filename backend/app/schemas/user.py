@@ -2,8 +2,9 @@
 User schemas for user management.
 """
 
+from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from pydantic import EmailStr
 
 

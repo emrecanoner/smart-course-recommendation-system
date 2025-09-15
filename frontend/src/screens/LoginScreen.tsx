@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { loginUser, clearError } from '../store/slices/authSlice';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 interface LoginScreenProps {
@@ -26,7 +25,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
-  const { isLoading, error } = useSelector((state: RootState) => state.auth);
+  const { isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  // Navigate to Home when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigation.navigate('Home');
+    }
+  }, [isAuthenticated, navigation]);
+
+  // Clear error when component mounts
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -34,11 +45,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       return;
     }
 
+    // Clear any previous errors
+    dispatch(clearError());
+
     try {
       await dispatch(loginUser({ username: email, password })).unwrap();
       // Navigation will be handled by the navigation logic
     } catch (error) {
-      Alert.alert('Login Failed', error as string);
+      // Error will be handled by Redux state
+      console.error('Login error:', error);
     }
   };
 
@@ -47,10 +62,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <LinearGradient
-      colors={['#667eea', '#764ba2']}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
@@ -59,10 +71,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           <View style={styles.content}>
             {/* Header */}
             <View style={styles.header}>
-              <Ionicons name="school" size={60} color="white" />
+              <Ionicons name="school" size={60} color="#667eea" />
               <Text style={styles.title}>Smart Course</Text>
               <Text style={styles.subtitle}>AI-Powered Learning</Text>
             </View>
+
+            {/* Error Message */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={20} color="#ff6b6b" />
+                <Text style={styles.errorText}>
+                  {typeof error === 'string' ? error : 'Login failed. Please try again.'}
+                </Text>
+              </View>
+            )}
 
             {/* Login Form */}
             <View style={styles.form}>
@@ -77,6 +99,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  selectionColor="#667eea"
                 />
               </View>
 
@@ -91,6 +114,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  selectionColor="#667eea"
                 />
                 <TouchableOpacity
                   style={styles.eyeIcon}
@@ -126,13 +150,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#ffffff',
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -152,54 +177,67 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#333',
     marginTop: 20,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#666',
     marginTop: 5,
   },
   form: {
-    backgroundColor: 'white',
-    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     padding: 30,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 10,
+      height: 4,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
     marginBottom: 20,
-    paddingHorizontal: 15,
-    height: 50,
+    paddingHorizontal: 16,
+    height: 56,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
   },
   inputIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   input: {
     flex: 1,
     fontSize: 16,
     color: '#333',
+    fontWeight: '400',
   },
   eyeIcon: {
-    padding: 5,
+    padding: 8,
   },
   loginButton: {
     backgroundColor: '#667eea',
     borderRadius: 12,
-    height: 50,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
+    shadowColor: '#667eea',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   disabledButton: {
     opacity: 0.6,
@@ -207,7 +245,7 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: 'white',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   registerButton: {
     marginTop: 20,
@@ -216,6 +254,24 @@ const styles = StyleSheet.create({
   registerButtonText: {
     color: '#667eea',
     fontSize: 16,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff5f5',
+    borderColor: '#ff6b6b',
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 20,
+    minHeight: 50,
+  },
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
     fontWeight: '500',
   },
 });

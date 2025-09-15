@@ -40,12 +40,20 @@ def register_user(
     """
     user_service = UserService(db)
     
-    # Check if user already exists
+    # Check if user already exists by email
     user = user_service.get_by_email(email=user_in.email)
     if user:
         raise HTTPException(
             status_code=400,
             detail="The user with this email already exists in the system.",
+        )
+    
+    # Check if username already exists
+    user = user_service.get_by_username(username=user_in.username)
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="The user with this username already exists in the system.",
         )
     
     # Create new user
@@ -98,8 +106,8 @@ def login_access_token(
     }
 
 
-@router.post("/test-token", response_model=UserResponse)
-def test_token(current_user: User = Depends(security.get_current_user)) -> Any:
+@router.get("/test-token", response_model=UserResponse)
+async def test_token(current_user: User = Depends(security.get_current_user)) -> Any:
     """
     Test access token and return current user information.
     
@@ -109,4 +117,20 @@ def test_token(current_user: User = Depends(security.get_current_user)) -> Any:
     Returns:
         UserResponse: Current user information
     """
-    return current_user
+    # Convert datetime fields to ISO format strings
+    user_data = {
+        "id": current_user.id,
+        "email": current_user.email,
+        "username": current_user.username,
+        "full_name": current_user.full_name,
+        "is_active": current_user.is_active,
+        "bio": current_user.bio,
+        "learning_goals": current_user.learning_goals,
+        "preferred_categories": current_user.preferred_categories,
+        "skill_level": current_user.skill_level,
+        "time_commitment": current_user.time_commitment,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+        "updated_at": current_user.updated_at.isoformat() if current_user.updated_at else None,
+        "last_login": current_user.last_login.isoformat() if current_user.last_login else None,
+    }
+    return user_data

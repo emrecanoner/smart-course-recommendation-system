@@ -17,6 +17,7 @@ export const loginUser = createAsyncThunk(
   async (credentials: LoginRequest, { rejectWithValue }) => {
     try {
       const response = await apiService.login(credentials);
+      // Token is already set in apiService.login()
       const user = await apiService.getCurrentUser();
       return { token: response.access_token, user };
     } catch (error: any) {

@@ -25,7 +25,10 @@ const AppNavigator: React.FC = () => {
 
   useEffect(() => {
     // Check if user is already authenticated
-    dispatch(getCurrentUser());
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      dispatch(getCurrentUser());
+    }
   }, [dispatch]);
 
   if (isLoading) {
