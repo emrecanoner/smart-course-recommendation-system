@@ -131,6 +131,7 @@ export interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isRegistering: boolean;
   error: string | null;
 }
 

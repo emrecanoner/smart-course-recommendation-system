@@ -8,6 +8,7 @@ const initialState: AuthState = {
   token: null,
   isAuthenticated: false,
   isLoading: false,
+  isRegistering: false,
   error: null,
 };
 
@@ -104,10 +105,12 @@ const authSlice = createSlice({
       // Register
       .addCase(registerUser.pending, (state) => {
         state.isLoading = true;
+        state.isRegistering = true;
         state.error = null;
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isRegistering = false;
         // Don't set user or isAuthenticated after registration
         // User needs to login separately
         state.user = null;
@@ -116,6 +119,7 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
+        state.isRegistering = false;
         state.isAuthenticated = false;
         state.user = null;
         state.token = null;
@@ -135,7 +139,11 @@ const authSlice = createSlice({
       .addCase(getCurrentUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
         state.error = action.payload as string;
+        // Clear token from localStorage when getCurrentUser fails
+        apiService.logout();
       })
       // Update user
       .addCase(updateUser.pending, (state) => {

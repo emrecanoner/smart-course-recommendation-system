@@ -133,15 +133,30 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         full_name: formData.fullName || undefined,
       })).unwrap();
       
-      // Show success message without auto-navigation
-      if (result) {
-        Alert.alert(
-          'Success',
-          'Account created successfully! Please sign in.',
-          [{ text: 'OK' }]
-        );
-      }
+      console.log('Register result:', result);
+      
+      // Show success message and navigate to login
+      console.log('Showing success alert...');
+      Alert.alert(
+        'Success',
+        'Account created successfully! Please sign in.',
+        [{ 
+          text: 'OK',
+          onPress: () => {
+            console.log('Navigating to Login...');
+            // Navigate to login screen after successful registration
+            navigation.navigate('Login');
+          }
+        }]
+      );
+      
+      // Direct navigation as backup (in case alert onPress doesn't work)
+      console.log('Direct navigation to Login...');
+      setTimeout(() => {
+        navigation.navigate('Login');
+      }, 1000); // 1 second delay to allow user to see the alert
     } catch (error) {
+      console.log('Register error:', error);
       // Error will be shown in UI via Redux state
       // Don't navigate anywhere on error - stay on current screen
       // Error will be displayed in UI via Redux state

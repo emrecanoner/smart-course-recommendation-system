@@ -21,7 +21,7 @@ interface HomeScreenProps {
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { recommendations, isLoading } = useSelector((state: RootState) => state.recommendations);
+  const { recommendations, isLoading } = useSelector((state: RootState) => state.recommendations) as { recommendations: any[], isLoading: boolean };
 
   useEffect(() => {
     // Fetch recommendations when component mounts
@@ -30,6 +30,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const handleLogout = () => {
     dispatch(logout());
+    // Navigate to login screen after logout
+    navigation.navigate('Login');
   };
 
   const handleNavigateToCourses = () => {
@@ -101,7 +103,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </View>
           ) : recommendations.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {recommendations.map((recommendation) => (
+              {recommendations.map((recommendation: any) => (
                 <TouchableOpacity
                   key={recommendation.course_id}
                   style={styles.recommendationCard}
