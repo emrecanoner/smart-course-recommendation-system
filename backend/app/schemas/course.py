@@ -4,6 +4,7 @@ Course schemas for course management.
 
 from typing import Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class CategoryBase(BaseModel):
@@ -30,8 +31,8 @@ class CategoryResponse(CategoryBase):
     """Schema for category response."""
     id: int
     is_active: bool
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
@@ -85,9 +86,9 @@ class CourseResponse(CourseBase):
     completion_rate: float
     is_active: bool
     is_featured: bool
-    created_at: str
-    updated_at: str
-    published_at: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    published_at: Optional[datetime] = None
     category: Optional[CategoryResponse] = None
 
     class Config:
