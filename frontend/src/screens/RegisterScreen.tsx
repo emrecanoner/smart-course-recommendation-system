@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -15,6 +14,15 @@ import { RootState, AppDispatch } from '../store';
 import { registerUser, clearError } from '../store/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
 import LoadingComponent from '../components/LoadingComponent';
+import { 
+  getResponsiveStyles, 
+  getIconSize, 
+  getTitleSize, 
+  getSubtitleSize,
+  isWeb,
+  isTablet,
+  isDesktop 
+} from '../styles/responsiveStyles';
 
 interface RegisterScreenProps {
   navigation: any;
@@ -36,6 +44,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
 
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, error } = useSelector((state: RootState) => state.auth);
+
+  // Get responsive styles
+  const styles = getResponsiveStyles();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -174,7 +185,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
           <View style={styles.content}>
             {/* Header */}
             <View style={styles.header}>
-              <Ionicons name="person-add" size={60} color="#667eea" />
+              <Ionicons 
+                name="person-add" 
+                size={getIconSize()} 
+                color="#667eea" 
+              />
               <Text style={styles.title}>Create Account</Text>
               <Text style={styles.subtitle}>Join Smart Course today</Text>
             </View>
@@ -192,7 +207,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
             {/* Register Form */}
             <View style={styles.form}>
               {/* Email Input */}
-              <View style={styles.inputGroup}>
+              <View style={styles.inputWrapper}>
                 <View style={[
                   styles.inputContainer,
                   touched.email && errors.email && styles.inputError
@@ -217,14 +232,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   />
                 </View>
                 {touched.email && errors.email && (
-                  <View>
-                    <Text style={styles.fieldErrorText}>{errors.email}</Text>
-                  </View>
+                  <Text style={styles.fieldErrorText}>{errors.email}</Text>
                 )}
               </View>
 
               {/* Username Input */}
-              <View style={styles.inputGroup}>
+              <View style={styles.inputWrapper}>
                 <View style={[
                   styles.inputContainer,
                   touched.username && errors.username && styles.inputError
@@ -248,14 +261,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   />
                 </View>
                 {touched.username && errors.username && (
-                  <View>
-                    <Text style={styles.fieldErrorText}>{errors.username}</Text>
-                  </View>
+                  <Text style={styles.fieldErrorText}>{errors.username}</Text>
                 )}
               </View>
 
               {/* Full Name Input */}
-              <View style={styles.inputGroup}>
+              <View style={styles.inputWrapper}>
                 <View style={styles.inputContainer}>
                   <Ionicons 
                     name="person-circle" 
@@ -276,7 +287,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               </View>
 
               {/* Password Input */}
-              <View style={styles.inputGroup}>
+              <View style={styles.inputWrapper}>
                 <View style={[
                   styles.inputContainer,
                   touched.password && errors.password && styles.inputError
@@ -311,14 +322,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
                 {touched.password && errors.password && (
-                  <View>
-                    <Text style={styles.fieldErrorText}>{errors.password}</Text>
-                  </View>
+                  <Text style={styles.fieldErrorText}>{errors.password}</Text>
                 )}
               </View>
 
               {/* Confirm Password Input */}
-              <View style={styles.inputGroup}>
+              <View style={styles.inputWrapper}>
                 <View style={[
                   styles.inputContainer,
                   touched.confirmPassword && errors.confirmPassword && styles.inputError
@@ -353,29 +362,27 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
                 {touched.confirmPassword && errors.confirmPassword && (
-                  <View>
-                    <Text style={styles.fieldErrorText}>{errors.confirmPassword}</Text>
-                  </View>
+                  <Text style={styles.fieldErrorText}>{errors.confirmPassword}</Text>
                 )}
               </View>
 
               {/* Register Button */}
               <TouchableOpacity
-                style={[styles.registerButton, isLoading && styles.disabledButton]}
+                style={[styles.button, isLoading && styles.disabledButton]}
                 onPress={handleRegister}
                 disabled={isLoading}
               >
-                <Text style={styles.registerButtonText}>
+                <Text style={styles.buttonText}>
                   {isLoading ? 'Creating Account...' : 'Create Account'}
                 </Text>
               </TouchableOpacity>
 
               {/* Login Button */}
               <TouchableOpacity
-                style={styles.loginButton}
+                style={styles.secondaryButton}
                 onPress={handleLogin}
               >
-                <Text style={styles.loginButtonText}>
+                <Text style={styles.secondaryButtonText}>
                   Already have an account? Sign In
                 </Text>
               </TouchableOpacity>
@@ -387,140 +394,5 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 30,
-    paddingVertical: 20,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 20,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 5,
-  },
-  form: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 30,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 56,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  inputError: {
-    borderColor: '#ff6b6b',
-    backgroundColor: '#fff5f5',
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '400',
-  },
-  eyeIcon: {
-    padding: 8,
-  },
-  fieldErrorText: {
-    color: '#ff6b6b',
-    fontSize: 14,
-    marginTop: 6,
-    marginLeft: 4,
-    fontWeight: '500',
-  },
-  registerButton: {
-    backgroundColor: '#667eea',
-    borderRadius: 12,
-    height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-    shadowColor: '#667eea',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  registerButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  loginButton: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  loginButtonText: {
-    color: '#667eea',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff5f5',
-    borderColor: '#ff6b6b',
-    borderWidth: 2,
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 20,
-    minHeight: 50,
-  },
-  errorText: {
-    color: '#ff6b6b',
-    fontSize: 14,
-    marginLeft: 8,
-    flex: 1,
-    fontWeight: '500',
-  },
-});
 
 export default RegisterScreen;

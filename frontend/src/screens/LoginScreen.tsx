@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -15,6 +14,15 @@ import { RootState, AppDispatch } from '../store';
 import { loginUser, clearError } from '../store/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
 import LoadingComponent from '../components/LoadingComponent';
+import { 
+  getResponsiveStyles, 
+  getIconSize, 
+  getTitleSize, 
+  getSubtitleSize,
+  isWeb,
+  isTablet,
+  isDesktop 
+} from '../styles/responsiveStyles';
 
 interface LoginScreenProps {
   navigation: any;
@@ -27,6 +35,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  // Get responsive styles
+  const styles = getResponsiveStyles();
 
 
   // Remove automatic navigation - handle it only in handleLogin
@@ -67,7 +78,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           <View style={styles.content}>
             {/* Header */}
             <View style={styles.header}>
-              <Ionicons name="school" size={60} color="#667eea" />
+              <Ionicons 
+                name="school" 
+                size={getIconSize()} 
+                color="#667eea" 
+              />
               <Text style={styles.title}>Smart Course</Text>
               <Text style={styles.subtitle}>AI-Powered Learning</Text>
             </View>
@@ -84,67 +99,71 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
             {/* Login Form */}
             <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <Ionicons name="mail" size={20} color="#666" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email"
-                  placeholderTextColor="#999"
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    if (error) dispatch(clearError()); // Clear error when user starts typing
-                  }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  selectionColor="#667eea"
-                />
+              <View style={styles.inputWrapper}>
+                <View style={styles.inputContainer}>
+                  <Ionicons name="mail" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email"
+                    placeholderTextColor="#999"
+                    value={email}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      if (error) dispatch(clearError()); // Clear error when user starts typing
+                    }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    selectionColor="#667eea"
+                  />
+                </View>
               </View>
 
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed" size={20} color="#666" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor="#999"
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (error) dispatch(clearError()); // Clear error when user starts typing
-                  }}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  selectionColor="#667eea"
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-off' : 'eye'}
-                    size={20}
-                    color="#666"
+              <View style={styles.inputWrapper}>
+                <View style={styles.inputContainer}>
+                  <Ionicons name="lock-closed" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    placeholderTextColor="#999"
+                    value={password}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      if (error) dispatch(clearError()); // Clear error when user starts typing
+                    }}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    selectionColor="#667eea"
                   />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off' : 'eye'}
+                      size={20}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <TouchableOpacity
-                style={[styles.loginButton, isLoading && styles.disabledButton]}
+                style={[styles.button, isLoading && styles.disabledButton]}
                 onPress={handleLogin}
                 disabled={isLoading}
               >
-                <Text style={styles.loginButtonText}>
+                <Text style={styles.buttonText}>
                   {isLoading ? 'Signing In...' : 'Sign In'}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.registerButton}
+                style={styles.secondaryButton}
                 onPress={handleRegister}
               >
-                <Text style={styles.registerButtonText}>
+                <Text style={styles.secondaryButtonText}>
                   Don't have an account? Sign Up
                 </Text>
               </TouchableOpacity>
@@ -156,126 +175,5 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 30,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 50,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 20,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 5,
-  },
-  form: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 30,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    marginBottom: 20,
-    paddingHorizontal: 16,
-    height: 56,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '400',
-  },
-  eyeIcon: {
-    padding: 8,
-  },
-  loginButton: {
-    backgroundColor: '#667eea',
-    borderRadius: 12,
-    height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-    shadowColor: '#667eea',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  loginButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  registerButton: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  registerButtonText: {
-    color: '#667eea',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff5f5',
-    borderColor: '#ff6b6b',
-    borderWidth: 2,
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 20,
-    minHeight: 50,
-  },
-  errorText: {
-    color: '#ff6b6b',
-    fontSize: 14,
-    marginLeft: 8,
-    flex: 1,
-    fontWeight: '500',
-  },
-});
 
 export default LoginScreen;
