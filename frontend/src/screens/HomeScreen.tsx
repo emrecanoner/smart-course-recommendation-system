@@ -1,19 +1,25 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { fetchRecommendations } from '../store/slices/recommendationSlice';
 import { logout } from '../store/slices/authSlice';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import LoadingComponent from '../components/LoadingComponent';
+import { 
+  getResponsiveHomeStyles, 
+  isWeb, 
+  isTablet, 
+  isDesktop,
+  isMobile 
+} from '../styles/responsiveStyles';
 
 interface HomeScreenProps {
   navigation: any;
@@ -24,6 +30,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { recommendations, isLoading } = useSelector((state: RootState) => state.recommendations) as { recommendations: any[], isLoading: boolean };
   const [showPageLoading, setShowPageLoading] = React.useState(true);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  
+  const styles = getResponsiveHomeStyles();
 
   useEffect(() => {
     // Fetch recommendations when component mounts
@@ -65,325 +74,331 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.header}
-      >
-        <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.welcomeText}>Welcome back!</Text>
-            <Text style={styles.userName}>{user?.full_name || user?.username}</Text>
+    <SafeAreaView style={styles.homeContainer}>
+      {/* Modern Responsive Header */}
+      <View style={styles.homeHeader}>
+        <View style={styles.homeHeaderContent}>
+          <View style={styles.homeUserInfo}>
+            <Text style={styles.homeWelcomeText}>
+              {isDesktop ? 'Welcome back to Smart Course!' : 'Welcome back!'}
+            </Text>
+            <Text style={styles.homeUserName}>{user?.full_name || user?.username}</Text>
           </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <Ionicons name="log-out-outline" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-
-      <ScrollView style={styles.content}>
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={handleNavigateToCourses}
+          <View style={styles.homeHeaderActions}>
+            <TouchableOpacity 
+              onPress={handleNavigateToProfile} 
+              style={styles.homeHeaderButton}
+              onPressIn={() => isWeb && setHoveredCard('profile')}
+              onPressOut={() => isWeb && setHoveredCard(null)}
             >
-              <Ionicons name="book" size={30} color="#667eea" />
-              <Text style={styles.actionTitle}>Browse Courses</Text>
-              <Text style={styles.actionSubtitle}>Explore all courses</Text>
+              <Ionicons 
+                name="person-circle-outline" 
+                size={isDesktop ? 28 : isTablet ? 26 : 24} 
+                color="#666" 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={handleLogout} 
+              style={styles.homeHeaderButton}
+              onPressIn={() => isWeb && setHoveredCard('logout')}
+              onPressOut={() => isWeb && setHoveredCard(null)}
+            >
+              <Ionicons 
+                name="log-out-outline" 
+                size={isDesktop ? 28 : isTablet ? 26 : 24} 
+                color="#666" 
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.homeMainContent}>
+        <ScrollView 
+          style={styles.homeScrollContent} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
+        {/* Quick Actions */}
+        <View style={styles.homeSection}>
+          <View style={styles.homeSectionHeader}>
+            <Text style={styles.homeSectionTitle}>
+              {isDesktop ? 'Quick Actions & Navigation' : 'Quick Actions'}
+            </Text>
+          </View>
+          <View style={styles.homeQuickActions}>
+            <TouchableOpacity
+              style={[
+                styles.homeActionCard,
+                hoveredCard === 'courses' && isWeb && {
+                  transform: [{ translateY: -4 }],
+                  shadowOpacity: 0.15,
+                  borderColor: '#007bff',
+                  shadowColor: '#007bff',
+                }
+              ]}
+              onPress={handleNavigateToCourses}
+              onPressIn={() => isWeb && setHoveredCard('courses')}
+              onPressOut={() => isWeb && setHoveredCard(null)}
+            >
+              <View style={styles.homeActionIconContainer}>
+                <Ionicons 
+                  name="library" 
+                  size={isDesktop ? 40 : isTablet ? 36 : 32} 
+                  color="#007bff" 
+                />
+              </View>
+              <Text style={styles.homeActionTitle}>
+                {isDesktop ? 'Browse All Courses' : 'Browse Courses'}
+              </Text>
+              <Text style={styles.homeActionSubtitle}>
+                {isDesktop ? 'Explore our comprehensive course library' : 'Explore all available courses'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionCard}
+              style={[
+                styles.homeActionCard,
+                hoveredCard === 'recommendations' && isWeb && {
+                  transform: [{ translateY: -4 }],
+                  shadowOpacity: 0.15,
+                  borderColor: '#007bff',
+                  shadowColor: '#007bff',
+                }
+              ]}
               onPress={handleNavigateToRecommendations}
+              onPressIn={() => isWeb && setHoveredCard('recommendations')}
+              onPressOut={() => isWeb && setHoveredCard(null)}
             >
-              <Ionicons name="bulb" size={30} color="#667eea" />
-              <Text style={styles.actionTitle}>AI Recommendations</Text>
-              <Text style={styles.actionSubtitle}>Personalized for you</Text>
+              <View style={styles.homeActionIconContainer}>
+                <Ionicons 
+                  name="sparkles" 
+                  size={isDesktop ? 40 : isTablet ? 36 : 32} 
+                  color="#007bff" 
+                />
+              </View>
+              <Text style={styles.homeActionTitle}>
+                {isDesktop ? 'AI-Powered Recommendations' : 'AI Recommendations'}
+              </Text>
+              <Text style={styles.homeActionSubtitle}>
+                {isDesktop ? 'Get personalized course suggestions based on your learning patterns' : 'Personalized course suggestions'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Recommended Courses */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recommended for You</Text>
-            <TouchableOpacity onPress={handleNavigateToRecommendations}>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.homeSection}>
+          {isMobile ? (
+            // Mobile layout - stacked vertically
+            <View>
+              <Text style={styles.homeSectionTitle}>
+                Recommended for You
+              </Text>
+              <TouchableOpacity 
+                onPress={handleNavigateToRecommendations}
+                style={{ marginTop: 8, marginBottom: 16 }}
+              >
+                <Text style={styles.homeSeeAllText}>
+                  See All
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            // Desktop/Tablet layout - side by side
+            <View style={styles.homeSectionHeader}>
+              <Text style={styles.homeSectionTitle}>
+                {isDesktop ? 'AI-Powered Recommendations for You' : 'Recommended for You'}
+              </Text>
+              <TouchableOpacity onPress={handleNavigateToRecommendations}>
+                <Text style={styles.homeSeeAllText}>
+                  {isDesktop ? 'View All Recommendations' : 'See All'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading recommendations...</Text>
+            <View style={styles.homeLoadingContainer}>
+              <Ionicons name="hourglass-outline" size={isDesktop ? 40 : 30} color="#6c757d" />
+              <Text style={styles.homeLoadingText}>
+                {isDesktop ? 'Loading personalized recommendations...' : 'Loading recommendations...'}
+              </Text>
             </View>
           ) : recommendations.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {recommendations.map((recommendation: any) => (
+            isMobile ? (
+              // Mobile: 2 rows layout
+              <View style={styles.homeRecommendationGrid}>
+                {recommendations.map((recommendation: any) => (
+                  <TouchableOpacity
+                    key={recommendation.course_id}
+                    style={[
+                      styles.homeRecommendationCardMobile,
+                      hoveredCard === `rec-${recommendation.course_id}` && isWeb && {
+                        transform: [{ translateY: -4 }],
+                        shadowOpacity: 0.15,
+                        borderColor: '#007bff',
+                        shadowColor: '#007bff',
+                      }
+                    ]}
+                    onPress={() => navigation.navigate('CourseDetail', { 
+                      courseId: recommendation.course_id 
+                    })}
+                    onPressIn={() => isWeb && setHoveredCard(`rec-${recommendation.course_id}`)}
+                    onPressOut={() => isWeb && setHoveredCard(null)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.homeRecommendationHeader}>
+                        <Text style={styles.homeRecommendationTitle} numberOfLines={2}>
+                          {recommendation.title}
+                        </Text>
+                        <View style={styles.homeRatingContainer}>
+                          <Ionicons 
+                            name="star" 
+                            size={16} 
+                            color="#FFD700" 
+                          />
+                          <Text style={styles.homeRatingText}>
+                            {recommendation.rating.toFixed(1)}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.homeRecommendationInstructor}>
+                        {recommendation.instructor}
+                      </Text>
+                      <Text style={styles.homeRecommendationReason} numberOfLines={2}>
+                        {recommendation.recommendation_reason}
+                      </Text>
+                    </View>
+                    <View style={styles.homeRecommendationFooter}>
+                      <Text style={styles.homeConfidenceScore}>
+                        {Math.round(recommendation.confidence_score * 100)}% match
+                      </Text>
+                      <Text style={styles.homePriceText}>
+                        {recommendation.is_free ? 'Free' : `$${recommendation.price}`}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              // Desktop/Tablet: Horizontal scroll
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ 
+                  paddingRight: isDesktop ? 20 : 10,
+                  paddingLeft: 0,
+                  alignItems: 'stretch'
+                }}
+                style={{ 
+                  flexGrow: 0,
+                  ...(isWeb && { 
+                    overflow: 'auto' as any,
+                    WebkitOverflowScrolling: 'touch' as any,
+                    scrollbarWidth: 'none' as any,
+                    msOverflowStyle: 'none' as any
+                  })
+                }}
+                nestedScrollEnabled={true}
+                scrollEventThrottle={16}
+              >
+                {recommendations.map((recommendation: any) => (
                 <TouchableOpacity
                   key={recommendation.course_id}
-                  style={styles.recommendationCard}
+                  style={[
+                    styles.homeRecommendationCard,
+                    hoveredCard === `rec-${recommendation.course_id}` && isWeb && {
+                      transform: [{ translateY: -4 }],
+                      shadowOpacity: 0.15,
+                      borderColor: '#007bff',
+                      shadowColor: '#007bff',
+                    }
+                  ]}
                   onPress={() => navigation.navigate('CourseDetail', { 
                     courseId: recommendation.course_id 
                   })}
+                  onPressIn={() => isWeb && setHoveredCard(`rec-${recommendation.course_id}`)}
+                  onPressOut={() => isWeb && setHoveredCard(null)}
                 >
-                  <View style={styles.recommendationHeader}>
-                    <Text style={styles.recommendationTitle} numberOfLines={2}>
-                      {recommendation.title}
-                    </Text>
-                    <View style={styles.ratingContainer}>
-                      <Ionicons name="star" size={16} color="#FFD700" />
-                      <Text style={styles.ratingText}>{recommendation.rating.toFixed(1)}</Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.homeRecommendationHeader}>
+                      <Text style={styles.homeRecommendationTitle} numberOfLines={2}>
+                        {recommendation.title}
+                      </Text>
+                      <View style={styles.homeRatingContainer}>
+                        <Ionicons 
+                          name="star" 
+                          size={isDesktop ? 18 : 16} 
+                          color="#FFD700" 
+                        />
+                        <Text style={styles.homeRatingText}>
+                          {recommendation.rating.toFixed(1)}
+                        </Text>
+                      </View>
                     </View>
+                    <Text style={styles.homeRecommendationInstructor}>
+                      {recommendation.instructor}
+                    </Text>
+                    <Text style={styles.homeRecommendationReason} numberOfLines={isDesktop ? 3 : 2}>
+                      {recommendation.recommendation_reason}
+                    </Text>
                   </View>
-                  <Text style={styles.recommendationInstructor}>
-                    {recommendation.instructor}
-                  </Text>
-                  <Text style={styles.recommendationReason} numberOfLines={2}>
-                    {recommendation.recommendation_reason}
-                  </Text>
-                  <View style={styles.recommendationFooter}>
-                    <Text style={styles.confidenceScore}>
+                  <View style={styles.homeRecommendationFooter}>
+                    <Text style={styles.homeConfidenceScore}>
                       {Math.round(recommendation.confidence_score * 100)}% match
                     </Text>
-                    <Text style={styles.priceText}>
+                    <Text style={styles.homePriceText}>
                       {recommendation.is_free ? 'Free' : `$${recommendation.price}`}
                     </Text>
                   </View>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+                ))}
+              </ScrollView>
+            )
           ) : (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="bulb-outline" size={50} color="#ccc" />
-              <Text style={styles.emptyText}>No recommendations yet</Text>
-              <Text style={styles.emptySubtext}>
-                Browse courses to get personalized recommendations
+            <View style={styles.homeEmptyContainer}>
+              <Ionicons 
+                name="bulb-outline" 
+                size={isDesktop ? 60 : 50} 
+                color="#6c757d" 
+              />
+              <Text style={styles.homeEmptyText}>
+                {isDesktop ? 'No personalized recommendations available yet' : 'No recommendations yet'}
+              </Text>
+              <Text style={styles.homeEmptySubtext}>
+                {isDesktop 
+                  ? 'Start browsing courses and interacting with content to receive AI-powered recommendations tailored to your learning preferences.'
+                  : 'Browse courses to get personalized recommendations'
+                }
               </Text>
             </View>
           )}
         </View>
 
-        {/* Profile Section */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.profileCard}
-            onPress={handleNavigateToProfile}
-          >
-            <Ionicons name="person-circle" size={40} color="#667eea" />
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileTitle}>Manage Profile</Text>
-              <Text style={styles.profileSubtitle}>
-                Update your preferences and learning goals
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
-          </TouchableOpacity>
+        {/* Footer Section */}
+        <View style={styles.homeFooter}>
+          <View style={styles.homeFooterContent}>
+            <Text style={styles.homeFooterText}>
+              {isDesktop 
+                ? 'Smart Course - AI-Powered Learning Platform' 
+                : 'Smart Course'
+              }
+            </Text>
+            <Text style={styles.homeFooterSubtext}>
+              {isDesktop 
+                ? 'Discover your next learning journey with personalized recommendations'
+                : 'AI-Powered Learning'
+              }
+            </Text>
+          </View>
         </View>
-      </ScrollView>
+
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  welcomeText: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    marginTop: 5,
-  },
-  logoutButton: {
-    padding: 10,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  section: {
-    marginTop: 30,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  seeAllText: {
-    fontSize: 16,
-    color: '#667eea',
-    fontWeight: '500',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionCard: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 20,
-    marginHorizontal: 5,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 10,
-  },
-  actionSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  recommendationCard: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 15,
-    marginRight: 15,
-    width: 280,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  recommendationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  recommendationTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-    marginRight: 10,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontSize: 14,
-    color: '#333',
-    marginLeft: 5,
-  },
-  recommendationInstructor: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 10,
-  },
-  recommendationReason: {
-    fontSize: 14,
-    color: '#888',
-    marginBottom: 15,
-  },
-  recommendationFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  confidenceScore: {
-    fontSize: 12,
-    color: '#667eea',
-    fontWeight: '500',
-  },
-  priceText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#666',
-    marginTop: 15,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-  profileCard: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  profileInfo: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  profileTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  profileSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-  },
-});
 
 export default HomeScreen;
