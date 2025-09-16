@@ -47,9 +47,12 @@ class Course(Base):
     
     # Course metadata
     instructor = Column(String(255), nullable=True)
+    organization = Column(String(255), nullable=True)  # University/Organization
     duration_hours = Column(Integer, nullable=True)
     difficulty_level = Column(String(50), nullable=True)  # beginner, intermediate, advanced
     language = Column(String(10), default="en", nullable=False)
+    course_url = Column(String(500), nullable=True)  # Course URL
+    modules_count = Column(String(100), nullable=True)  # Modules/Courses info
     
     # Course content and features
     content_type = Column(String(50), nullable=True)  # video, text, interactive, mixed
@@ -77,8 +80,6 @@ class Course(Base):
     
     # Relationships
     category = relationship("Category", back_populates="courses")
-    interactions = relationship("UserInteraction", back_populates="course")
-    recommendations = relationship("Recommendation", back_populates="course")
     
     def __repr__(self) -> str:
         return f"<Course(id={self.id}, title='{self.title}')>"

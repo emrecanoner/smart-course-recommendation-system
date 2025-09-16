@@ -195,7 +195,6 @@ ai-ml/models/*.bin
 ai-ml/models/*.safetensors
 
 # Data files
-data/
 datasets/
 
 # Temporary files
