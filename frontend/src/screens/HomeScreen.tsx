@@ -118,6 +118,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           style={styles.homeScrollContent} 
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40 }}
+          {...(isWeb && {
+            scrollEventThrottle: 16,
+            nestedScrollEnabled: true,
+          })}
         >
         {/* Quick Actions */}
         <View style={styles.homeSection}>
@@ -294,14 +298,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 style={{ 
                   flexGrow: 0,
                   ...(isWeb && { 
-                    overflow: 'auto' as any,
+                    overflowX: 'scroll' as any,
+                    overflowY: 'hidden' as any,
                     WebkitOverflowScrolling: 'touch' as any,
                     scrollbarWidth: 'none' as any,
-                    msOverflowStyle: 'none' as any
+                    msOverflowStyle: 'none' as any,
+                    cursor: 'grab' as any,
+                    '&::-webkit-scrollbar': { display: 'none' } as any
                   })
                 }}
                 nestedScrollEnabled={true}
                 scrollEventThrottle={16}
+                {...(isWeb && {
+                  scrollEnabled: true,
+                  directionalLockEnabled: true,
+                })}
               >
                 {recommendations.map((recommendation: any) => (
                 <TouchableOpacity

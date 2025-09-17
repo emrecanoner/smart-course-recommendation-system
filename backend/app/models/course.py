@@ -44,6 +44,7 @@ class Course(Base):
     title = Column(String(255), nullable=False, index=True)
     description = Column(Text, nullable=True)
     short_description = Column(String(500), nullable=True)
+    skills = Column(String(500), nullable=True)  # Comma-separated skills
     
     # Course metadata
     instructor = Column(String(255), nullable=True)

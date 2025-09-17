@@ -49,6 +49,7 @@ export interface Course {
   title: string;
   description?: string;
   short_description?: string;
+  skills?: string;
   instructor?: string;
   duration_hours?: number;
   difficulty_level?: string;
@@ -141,6 +142,14 @@ export interface CourseState {
   isLoading: boolean;
   error: string | null;
   selectedCourse: Course | null;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
 }
 
 export interface RecommendationState {

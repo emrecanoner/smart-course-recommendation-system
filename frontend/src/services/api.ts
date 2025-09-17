@@ -7,7 +7,8 @@ import {
   Course, 
   Recommendation,
   RecommendationRequest,
-  ApiResponse 
+  ApiResponse,
+  Category
 } from '../types';
 
 // API Configuration
@@ -104,17 +105,22 @@ class ApiService {
 
   // Course endpoints
   async getCourses(params?: {
-    skip?: number;
-    limit?: number;
+    page?: number;
+    size?: number;
     category?: string;
     search?: string;
-  }): Promise<Course[]> {
-    const response: AxiosResponse<Course[]> = await this.api.get('/courses/', { params });
+  }): Promise<{ items: Course[]; total: number; page: number; size: number; pages: number; has_next: boolean; has_previous: boolean }> {
+    const response = await this.api.get('/courses/', { params });
     return response.data;
   }
 
   async getCourse(courseId: number): Promise<Course> {
     const response: AxiosResponse<Course> = await this.api.get(`/courses/${courseId}`);
+    return response.data;
+  }
+
+  async getCategories(): Promise<Category[]> {
+    const response: AxiosResponse<Category[]> = await this.api.get('/courses/categories/');
     return response.data;
   }
 

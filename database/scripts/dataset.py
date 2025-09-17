@@ -253,11 +253,11 @@ def create_courses_from_dataset(db: Session, categories: List[Category], df: pd.
         }
         difficulty = difficulty_mapping.get(row['Level'], 'beginner')
         
-        # Extract skills and create short description
+        # Extract skills and create skills string
         skills = row['Skills'] if isinstance(row['Skills'], list) else []
         if not skills and pd.notna(row['Skills']):
             skills = str(row['Skills']).split(',')[:5]
-        skills_text = ', '.join([skill.strip() for skill in skills[:5]])
+        skills_string = ', '.join([skill.strip() for skill in skills[:5]]) if skills else None
         
         # Handle rating conversion
         try:
@@ -305,7 +305,8 @@ def create_courses_from_dataset(db: Session, categories: List[Category], df: pd.
         course = Course(
             title=str(row['title']),
             description=str(row['Description']),
-            short_description=f"Learn {skills_text}" if skills_text else "Comprehensive course",
+            short_description=f"Learn {skills_string}" if skills_string else "Comprehensive course",
+            skills=skills_string,
             instructor=str(row['Instructor']),
             organization=str(row['Organization']),
             duration_hours=duration_hours,

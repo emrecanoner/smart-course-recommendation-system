@@ -62,6 +62,47 @@ class CourseService:
         
         return query.offset(skip).limit(limit).all()
     
+    def get_count(
+        self,
+        *,
+        category: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> int:
+        """
+        Get total count of courses with optional filtering.
+        
+        Args:
+            category: Filter by category name
+            search: Search in title and description
+            
+        Returns:
+            int: Total count of courses
+        """
+        query = self.db.query(Course).filter(Course.is_active == True)
+        
+        # Apply filters
+        if category:
+            query = query.join(Category).filter(Category.name == category)
+        
+        if search:
+            search_filter = or_(
+                Course.title.ilike(f"%{search}%"),
+                Course.description.ilike(f"%{search}%"),
+                Course.short_description.ilike(f"%{search}%")
+            )
+            query = query.filter(search_filter)
+        
+        return query.count()
+    
+    def get_categories(self) -> List[Category]:
+        """
+        Get all active categories.
+        
+        Returns:
+            List[Category]: List of active categories
+        """
+        return self.db.query(Category).filter(Category.is_active == True).all()
+    
     def create(self, *, obj_in: CourseCreate) -> Course:
         """
         Create new course.

@@ -9,14 +9,17 @@ import {
   TextInput,
   FlatList,
   RefreshControl,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { fetchCourses, clearCourses } from '../store/slices/courseSlice';
+import { fetchCourses, clearCourses, fetchCategories } from '../store/slices/courseSlice';
 import { Course } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import LoadingComponent from '../components/LoadingComponent';
+import { getResponsiveCoursesStyles, isWeb, isTablet, isDesktop, isMobile } from '../styles/responsiveStyles';
 
 interface CoursesScreenProps {
   navigation: any;
@@ -24,25 +27,21 @@ interface CoursesScreenProps {
 
 const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { courses, isLoading, error } = useSelector((state: RootState) => state.courses);
+  const { courses, isLoading, error, pagination, categories } = useSelector((state: RootState) => state.courses);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
   const [showPageLoading, setShowPageLoading] = React.useState(true);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  
+  const styles = getResponsiveCoursesStyles();
 
-  const categories = [
-    'All',
-    'Programming',
-    'Design',
-    'Business',
-    'Marketing',
-    'Data Science',
-    'Web Development',
-    'Mobile Development',
-  ];
+  // Categories will be loaded from backend
+  const categoryNames = ['All', ...categories.map(cat => cat.name)];
 
   useEffect(() => {
-    dispatch(fetchCourses());
+    dispatch(fetchCourses({}));
+    dispatch(fetchCategories());
     
     // Show page loading for 1.5 seconds
     const timer = setTimeout(() => {
@@ -54,20 +53,52 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await dispatch(fetchCourses());
+    if (searchQuery.trim()) {
+      await dispatch(fetchCourses({ search: searchQuery.trim(), page: 1 }));
+    } else if (selectedCategory) {
+      await dispatch(fetchCourses({ category: selectedCategory, page: 1 }));
+    } else {
+      await dispatch(fetchCourses({ page: 1 }));
+    }
     setRefreshing(false);
   };
 
   const handleSearch = () => {
-    dispatch(fetchCourses({ search: searchQuery }));
+    dispatch(fetchCourses({ search: searchQuery, page: 1 }));
   };
 
   const handleCategoryFilter = (category: string) => {
     setSelectedCategory(category);
     if (category === 'All') {
-      dispatch(fetchCourses());
+      dispatch(fetchCourses({ page: 1 }));
     } else {
-      dispatch(fetchCourses({ category }));
+      dispatch(fetchCourses({ category, page: 1 }));
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.hasNextPage) {
+      const nextPage = pagination.currentPage + 1;
+      if (searchQuery.trim()) {
+        dispatch(fetchCourses({ search: searchQuery.trim(), page: nextPage }));
+      } else if (selectedCategory) {
+        dispatch(fetchCourses({ category: selectedCategory, page: nextPage }));
+      } else {
+        dispatch(fetchCourses({ page: nextPage }));
+      }
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.hasPreviousPage) {
+      const prevPage = pagination.currentPage - 1;
+      if (searchQuery.trim()) {
+        dispatch(fetchCourses({ search: searchQuery.trim(), page: prevPage }));
+      } else if (selectedCategory) {
+        dispatch(fetchCourses({ category: selectedCategory, page: prevPage }));
+      } else {
+        dispatch(fetchCourses({ page: prevPage }));
+      }
     }
   };
 
@@ -75,10 +106,65 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
     navigation.navigate('CourseDetail', { courseId: course.id });
   };
 
+  const formatSkills = (skills: string | undefined): string => {
+    if (!skills || skills.trim() === '' || skills.trim() === '[]') return 'No skillset defined';
+    
+    try {
+      // If it comes as string array format (e.g., "['skill1', 'skill2']")
+      if (skills.startsWith("['") && skills.endsWith("']") || 
+          skills.startsWith('["') && skills.endsWith('"]')) {
+        // Extract array from string
+        const arrayString = skills.slice(1, -1); // Remove first and last characters
+        const skillsArray = arrayString.split("', '").map(skill => 
+          skill.replace(/['"]/g, '').trim()
+        );
+        
+        return skillsArray
+          .map((skill: string) => {
+            return skill.charAt(0).toUpperCase() + skill.slice(1).toLowerCase();
+          })
+          .join(', ');
+      }
+      
+      // If it comes as real JSON array format, parse it
+      if (skills.startsWith('[') && skills.endsWith(']')) {
+        const skillsArray = JSON.parse(skills);
+        return skillsArray
+          .map((skill: string) => {
+            const trimmed = skill.trim().replace(/['"]/g, '');
+            return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+          })
+          .join(', ');
+      }
+      
+      // If it's comma-separated string, format directly
+      return skills
+        .split(',')
+        .map(skill => {
+          const trimmed = skill.trim().replace(/['"]/g, '');
+          return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+        })
+        .join(', ');
+    } catch (error) {
+      // Return original string in case of parse error
+      return skills;
+    }
+  };
+
   const renderCourseItem = ({ item }: { item: Course }) => (
     <TouchableOpacity
-      style={styles.courseCard}
+      style={[
+        styles.courseCard,
+        hoveredCard === `course-${item.id}` && isWeb && {
+          transform: [{ translateY: -4 }],
+          shadowOpacity: 0.15,
+          borderColor: '#007bff',
+          shadowColor: '#007bff',
+        }
+      ]}
       onPress={() => handleCoursePress(item)}
+      onPressIn={() => isWeb && setHoveredCard(`course-${item.id}`)}
+      onPressOut={() => isWeb && setHoveredCard(null)}
     >
       <View style={styles.courseHeader}>
         <View style={styles.courseInfo}>
@@ -88,28 +174,28 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
           <Text style={styles.courseInstructor}>{item.instructor}</Text>
         </View>
         <View style={styles.courseRating}>
-          <Ionicons name="star" size={16} color="#FFD700" />
-          <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+          <Ionicons name="star" size={isDesktop ? 18 : isTablet ? 16 : 14} color="#FFD700" />
+          <Text style={styles.ratingText}>{Math.round(item.rating)}</Text>
         </View>
       </View>
 
       <Text style={styles.courseDescription} numberOfLines={3}>
-        {item.short_description || item.description}
+        {formatSkills(item.skills) || item.short_description || item.description}
       </Text>
 
       <View style={styles.courseFooter}>
         <View style={styles.courseMeta}>
           <View style={styles.metaItem}>
-            <Ionicons name="time" size={14} color="#666" />
+            <Ionicons name="time" size={isDesktop ? 16 : isTablet ? 14 : 12} color="#666" />
             <Text style={styles.metaText}>{item.duration_hours}h</Text>
           </View>
           <View style={styles.metaItem}>
-            <Ionicons name="people" size={14} color="#666" />
+            <Ionicons name="people" size={isDesktop ? 16 : isTablet ? 14 : 12} color="#666" />
             <Text style={styles.metaText}>{item.enrollment_count}</Text>
           </View>
           <View style={styles.metaItem}>
-            <Ionicons name="trending-up" size={14} color="#666" />
-            <Text style={styles.metaText}>{item.completion_rate}%</Text>
+            <Ionicons name="trending-up" size={isDesktop ? 16 : isTablet ? 14 : 12} color="#666" />
+            <Text style={styles.metaText}>{Math.round(item.completion_rate)}%</Text>
           </View>
         </View>
         <View style={styles.priceContainer}>
@@ -118,6 +204,14 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
           </Text>
         </View>
       </View>
+
+      {item.category && (
+        <View style={styles.courseSkills}>
+          <Text style={styles.skillsText}>
+            {item.category.name}
+          </Text>
+        </View>
+      )}
 
       {item.is_featured && (
         <View style={styles.featuredBadge}>
@@ -156,30 +250,46 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.header}
+    <SafeAreaView style={styles.coursesContainer}>
+      <ScrollView 
+        style={styles.coursesScrollContainer}
+        contentContainerStyle={styles.coursesScrollContent}
+        showsVerticalScrollIndicator={false}
+        {...(isWeb && {
+          scrollEventThrottle: 16,
+          nestedScrollEnabled: true,
+        })}
       >
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Courses</Text>
-          <View style={styles.placeholder} />
+        {/* Header */}
+        <View style={styles.coursesHeader}>
+          <View style={styles.coursesHeaderContent}>
+            <TouchableOpacity
+              style={styles.coursesBackButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons 
+                name="arrow-back" 
+                size={isDesktop ? 28 : isTablet ? 26 : 24} 
+                color="#666" 
+              />
+            </TouchableOpacity>
+            <Text style={styles.coursesHeaderTitle}>
+              {isDesktop ? 'Browse All Courses' : 'Courses'}
+            </Text>
+            <View style={styles.coursesHeaderPlaceholder} />
+          </View>
         </View>
-      </LinearGradient>
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#666" />
+      <View style={styles.coursesSearchContainer}>
+        <View style={styles.coursesSearchBar}>
+          <Ionicons 
+            name="search" 
+            size={isDesktop ? 22 : isTablet ? 20 : 18} 
+            color="#666" 
+          />
           <TextInput
-            style={styles.searchInput}
+            style={styles.coursesSearchInput}
             placeholder="Search courses..."
             placeholderTextColor="#999"
             value={searchQuery}
@@ -187,46 +297,58 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
             onSubmitEditing={handleSearch}
           />
           <TouchableOpacity onPress={handleSearch}>
-            <Ionicons name="arrow-forward" size={20} color="#667eea" />
+            <Ionicons 
+              name="arrow-forward" 
+              size={isDesktop ? 22 : isTablet ? 20 : 18} 
+              color="#007bff" 
+            />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Categories */}
-      <View style={styles.categoriesContainer}>
+      <View style={styles.coursesCategoriesContainer}>
         <FlatList
-          data={categories}
+          data={categoryNames}
           renderItem={renderCategoryItem}
           keyExtractor={(item) => item}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesList}
+          contentContainerStyle={styles.coursesCategoriesList}
         />
       </View>
 
       {/* Courses List */}
-      <View style={styles.coursesContainer}>
+      <View style={styles.coursesListContainer}>
         {isLoading && courses.length === 0 ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading courses...</Text>
+          <View style={styles.coursesLoadingContainer}>
+            <LoadingComponent visible={true} />
           </View>
         ) : error ? (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle" size={50} color="#ff6b6b" />
-            <Text style={styles.errorText}>Failed to load courses</Text>
-            <Text style={styles.errorSubtext}>{error}</Text>
+          <View style={styles.coursesErrorContainer}>
+            <Ionicons 
+              name="alert-circle" 
+              size={isDesktop ? 60 : isTablet ? 50 : 40} 
+              color="#ff6b6b" 
+            />
+            <Text style={styles.coursesErrorText}>Failed to load courses</Text>
+            <Text style={styles.coursesErrorSubtext}>{error}</Text>
             <TouchableOpacity
-              style={styles.retryButton}
-              onPress={() => dispatch(fetchCourses())}
+              style={styles.coursesRetryButton}
+              onPress={() => dispatch(fetchCourses({}))}
             >
-              <Text style={styles.retryButtonText}>Retry</Text>
+              <Text style={styles.coursesRetryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
         ) : courses.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="book-outline" size={50} color="#ccc" />
-            <Text style={styles.emptyText}>No courses found</Text>
-            <Text style={styles.emptySubtext}>
+          <View style={styles.coursesEmptyContainer}>
+            <Ionicons 
+              name="book-outline" 
+              size={isDesktop ? 60 : isTablet ? 50 : 40} 
+              color="#ccc" 
+            />
+            <Text style={styles.coursesEmptyText}>No courses found</Text>
+            <Text style={styles.coursesEmptySubtext}>
               Try adjusting your search or filters
             </Text>
           </View>
@@ -240,238 +362,57 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
             }
             contentContainerStyle={styles.coursesList}
             showsVerticalScrollIndicator={false}
+            numColumns={isDesktop ? 2 : 1}
+            key={isDesktop ? 'two-column' : 'single-column'}
+            columnWrapperStyle={isDesktop ? styles.courseRow : undefined}
           />
         )}
+        
+        {/* Pagination */}
+        {courses.length > 0 && (
+          <View style={styles.paginationContainer}>
+            <TouchableOpacity
+              style={[
+                styles.paginationButton,
+                !pagination.hasPreviousPage && styles.paginationButtonDisabled
+              ]}
+              onPress={handlePreviousPage}
+              disabled={!pagination.hasPreviousPage}
+            >
+              <Text style={[
+                styles.paginationButtonText,
+                !pagination.hasPreviousPage && styles.paginationButtonTextDisabled
+              ]}>
+                Previous
+              </Text>
+            </TouchableOpacity>
+            
+            <Text style={styles.paginationInfo}>
+              {pagination.currentPage} of {pagination.totalPages}
+            </Text>
+            
+            <TouchableOpacity
+              style={[
+                styles.paginationButton,
+                !pagination.hasNextPage && styles.paginationButtonDisabled
+              ]}
+              onPress={handleNextPage}
+              disabled={!pagination.hasNextPage}
+            >
+              <Text style={[
+                styles.paginationButtonText,
+                !pagination.hasNextPage && styles.paginationButtonTextDisabled
+              ]}>
+                Next
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    padding: 5,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  placeholder: {
-    width: 34,
-  },
-  searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    height: 45,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 10,
-  },
-  categoriesContainer: {
-    backgroundColor: 'white',
-    paddingVertical: 15,
-  },
-  categoriesList: {
-    paddingHorizontal: 20,
-  },
-  categoryChip: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 10,
-  },
-  selectedCategoryChip: {
-    backgroundColor: '#667eea',
-  },
-  categoryText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  selectedCategoryText: {
-    color: 'white',
-  },
-  coursesContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  coursesList: {
-    paddingVertical: 10,
-  },
-  courseCard: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  courseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  courseInfo: {
-    flex: 1,
-    marginRight: 10,
-  },
-  courseTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  courseInstructor: {
-    fontSize: 14,
-    color: '#666',
-  },
-  courseRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontSize: 14,
-    color: '#333',
-    marginLeft: 5,
-    fontWeight: '500',
-  },
-  courseDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  courseFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  courseMeta: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  metaText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 5,
-  },
-  priceContainer: {
-    alignItems: 'flex-end',
-  },
-  priceText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#667eea',
-  },
-  featuredBadge: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    backgroundColor: '#ff6b6b',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  featuredText: {
-    fontSize: 10,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#ff6b6b',
-    marginTop: 15,
-    textAlign: 'center',
-  },
-  errorSubtext: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#667eea',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginTop: 20,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#666',
-    marginTop: 15,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-});
 
 export default CoursesScreen;

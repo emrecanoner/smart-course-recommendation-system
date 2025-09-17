@@ -2,9 +2,11 @@
 Course schemas for course management.
 """
 
-from typing import Optional
+from typing import Optional, List, Generic, TypeVar
 from pydantic import BaseModel
 from datetime import datetime
+
+T = TypeVar('T')
 
 
 class CategoryBase(BaseModel):
@@ -43,6 +45,7 @@ class CourseBase(BaseModel):
     title: str
     description: Optional[str] = None
     short_description: Optional[str] = None
+    skills: Optional[str] = None
     instructor: Optional[str] = None
     duration_hours: Optional[int] = None
     difficulty_level: Optional[str] = None
@@ -64,6 +67,7 @@ class CourseUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     short_description: Optional[str] = None
+    skills: Optional[str] = None
     instructor: Optional[str] = None
     duration_hours: Optional[int] = None
     difficulty_level: Optional[str] = None
@@ -93,3 +97,14 @@ class CourseResponse(CourseBase):
 
     class Config:
         from_attributes = True
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic paginated response schema."""
+    items: List[T]
+    total: int
+    page: int
+    size: int
+    pages: int
+    has_next: bool
+    has_previous: bool

@@ -572,6 +572,14 @@ export const homeBaseStyles = StyleSheet.create({
   homeScrollContent: {
     flex: 1,
     paddingHorizontal: 20,
+    ...(isWeb && {
+      height: '100vh',
+      maxHeight: '100vh',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'thin',
+    } as any),
   },
   
   homeProfileSection: {
@@ -682,6 +690,10 @@ export const homeBaseStyles = StyleSheet.create({
     borderColor: '#e9ecef',
     justifyContent: 'space-between', // Distribute content evenly
     flexShrink: 0, // Prevent shrinking for horizontal scroll
+    ...(isWeb && {
+      minWidth: homeResponsiveDimensions.recommendationCardWidth.mobile,
+      maxWidth: homeResponsiveDimensions.recommendationCardWidth.mobile,
+    } as any),
   },
   
   homeRecommendationGrid: {
@@ -1113,6 +1125,549 @@ export const getResponsiveHomeStyles = () => {
           styles[key] = { ...styles[key], ...homeDesktopStyles[key as keyof typeof homeDesktopStyles] };
         } else {
           styles[key] = homeDesktopStyles[key as keyof typeof homeDesktopStyles];
+        }
+      });
+    }
+  }
+  
+  return styles;
+};
+
+// Courses Screen Styles
+export const coursesResponsiveDimensions = {
+  headerHeight: {
+    mobile: 60,
+    tablet: 70,
+    desktop: 80,
+  },
+  searchBarHeight: {
+    mobile: 45,
+    tablet: 50,
+    desktop: 55,
+  },
+  courseCardWidth: {
+    mobile: '100%',
+    tablet: '100%',
+    desktop: '48%',
+  },
+  categoryChipPadding: {
+    mobile: { horizontal: 16, vertical: 8 },
+    tablet: { horizontal: 18, vertical: 10 },
+    desktop: { horizontal: 20, vertical: 12 },
+  },
+  sectionSpacing: {
+    mobile: 16,
+    tablet: 20,
+    desktop: 24,
+  },
+  cardSpacing: {
+    mobile: 12,
+    tablet: 16,
+    desktop: 20,
+  },
+  titleSize: {
+    mobile: 18,
+    tablet: 20,
+    desktop: 24,
+  },
+  subtitleSize: {
+    mobile: 14,
+    tablet: 16,
+    desktop: 18,
+  },
+  bodyTextSize: {
+    mobile: 12,
+    tablet: 14,
+    desktop: 16,
+  },
+  metaTextSize: {
+    mobile: 10,
+    tablet: 12,
+    desktop: 14,
+  },
+};
+
+export const coursesBaseStyles = StyleSheet.create({
+  coursesContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  coursesScrollContainer: {
+    flex: 1,
+    ...(isWeb && {
+      height: '100vh',
+      maxHeight: '100vh',
+      overflowY: 'scroll',
+      overflowX: 'hidden',
+      WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'thin',
+    } as any),
+  },
+  coursesScrollContent: {
+    flexGrow: 1,
+    ...(isWeb && {
+      minHeight: '100%',
+      paddingBottom: 20, // Minimal space for pagination
+    } as any),
+  },
+  coursesHeader: {
+    paddingTop: coursesResponsiveDimensions.headerHeight.mobile,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  coursesHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  coursesBackButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+  },
+  coursesHeaderTitle: {
+    fontSize: coursesResponsiveDimensions.titleSize.mobile,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  coursesHeaderPlaceholder: {
+    width: 40,
+  },
+  coursesSearchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: coursesResponsiveDimensions.sectionSpacing.mobile,
+    backgroundColor: '#ffffff',
+  },
+  coursesSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: coursesResponsiveDimensions.searchBarHeight.mobile,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  coursesSearchInput: {
+    flex: 1,
+    fontSize: coursesResponsiveDimensions.bodyTextSize.mobile,
+    color: '#333',
+    marginLeft: 12,
+  },
+  coursesCategoriesContainer: {
+    backgroundColor: '#ffffff',
+    paddingVertical: coursesResponsiveDimensions.sectionSpacing.mobile,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  coursesCategoriesList: {
+    paddingHorizontal: 20,
+  },
+  categoryChip: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 20,
+    paddingHorizontal: coursesResponsiveDimensions.categoryChipPadding.mobile.horizontal,
+    paddingVertical: coursesResponsiveDimensions.categoryChipPadding.mobile.vertical,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  selectedCategoryChip: {
+    backgroundColor: '#007bff',
+    borderColor: '#007bff',
+  },
+  categoryText: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.mobile,
+    color: '#666',
+    fontWeight: '500',
+  },
+  selectedCategoryText: {
+    color: '#ffffff',
+  },
+  coursesListContainer: {
+    paddingHorizontal: 20,
+  },
+  coursesList: {
+    paddingVertical: coursesResponsiveDimensions.sectionSpacing.mobile,
+  },
+  courseRow: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 0,
+  },
+  courseCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: coursesResponsiveDimensions.cardSpacing.mobile,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    width: coursesResponsiveDimensions.courseCardWidth.mobile as any,
+  },
+  courseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  courseInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  courseTitle: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.mobile,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 6,
+    lineHeight: 22,
+  },
+  courseInstructor: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.mobile,
+    color: '#666',
+  },
+  courseRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingText: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.mobile,
+    color: '#333',
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  courseDescription: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.mobile,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  courseFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  courseMeta: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  metaText: {
+    fontSize: coursesResponsiveDimensions.metaTextSize.mobile,
+    color: '#666',
+    marginLeft: 6,
+  },
+  priceContainer: {
+    alignItems: 'flex-end',
+  },
+  priceText: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.mobile,
+    fontWeight: 'bold',
+    color: '#007bff',
+  },
+  featuredBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: '#ff6b6b',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  featuredText: {
+    fontSize: 10,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  courseSkills: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  skillsText: {
+    fontSize: coursesResponsiveDimensions.metaTextSize.mobile,
+    color: '#007bff',
+    fontWeight: '500',
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  paginationButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+    marginHorizontal: 4,
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  paginationButtonActive: {
+    backgroundColor: '#007bff',
+  },
+  paginationButtonDisabled: {
+    backgroundColor: '#e9ecef',
+    opacity: 0.5,
+  },
+  paginationButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  paginationButtonTextActive: {
+    color: '#ffffff',
+  },
+  paginationButtonTextDisabled: {
+    color: '#6c757d',
+  },
+  paginationInfo: {
+    fontSize: 12,
+    color: '#666',
+    marginHorizontal: 16,
+  },
+  coursesLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  coursesErrorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  coursesErrorText: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.mobile,
+    color: '#ff6b6b',
+    marginTop: 16,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  coursesErrorSubtext: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.mobile,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  coursesRetryButton: {
+    backgroundColor: '#007bff',
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    marginTop: 20,
+  },
+  coursesRetryButtonText: {
+    color: '#ffffff',
+    fontSize: coursesResponsiveDimensions.bodyTextSize.mobile,
+    fontWeight: 'bold',
+  },
+  coursesEmptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  coursesEmptyText: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.mobile,
+    color: '#666',
+    marginTop: 16,
+    fontWeight: 'bold',
+  },
+  coursesEmptySubtext: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.mobile,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+});
+
+export const coursesWebStyles = StyleSheet.create({
+  coursesHeader: {
+    paddingTop: coursesResponsiveDimensions.headerHeight.tablet,
+    paddingBottom: 24,
+  },
+  coursesHeaderTitle: {
+    fontSize: coursesResponsiveDimensions.titleSize.tablet,
+  },
+  coursesSearchBar: {
+    height: coursesResponsiveDimensions.searchBarHeight.tablet,
+    paddingHorizontal: 18,
+  },
+  coursesSearchInput: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.tablet,
+  },
+  coursesCategoriesContainer: {
+    paddingVertical: coursesResponsiveDimensions.sectionSpacing.tablet,
+  },
+  categoryChip: {
+    paddingHorizontal: coursesResponsiveDimensions.categoryChipPadding.tablet.horizontal,
+    paddingVertical: coursesResponsiveDimensions.categoryChipPadding.tablet.vertical,
+  },
+  categoryText: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.tablet,
+  },
+  coursesList: {
+    paddingVertical: coursesResponsiveDimensions.sectionSpacing.tablet,
+  },
+  courseCard: {
+    padding: 18,
+    marginBottom: coursesResponsiveDimensions.cardSpacing.tablet,
+    width: coursesResponsiveDimensions.courseCardWidth.tablet as any,
+    marginHorizontal: 0,
+  },
+  courseTitle: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.tablet,
+    lineHeight: 24,
+  },
+  courseInstructor: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.tablet,
+  },
+  ratingText: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.tablet,
+  },
+  courseDescription: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.tablet,
+    lineHeight: 22,
+  },
+  metaText: {
+    fontSize: coursesResponsiveDimensions.metaTextSize.tablet,
+  },
+  priceText: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.tablet,
+  },
+  coursesErrorText: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.tablet,
+  },
+  coursesErrorSubtext: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.tablet,
+  },
+  coursesRetryButtonText: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.tablet,
+  },
+  coursesEmptyText: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.tablet,
+  },
+  coursesEmptySubtext: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.tablet,
+  },
+  skillsText: {
+    fontSize: coursesResponsiveDimensions.metaTextSize.tablet,
+  },
+});
+
+export const coursesDesktopStyles = StyleSheet.create({
+  coursesHeader: {
+    paddingTop: coursesResponsiveDimensions.headerHeight.desktop,
+    paddingBottom: 28,
+  },
+  coursesHeaderTitle: {
+    fontSize: coursesResponsiveDimensions.titleSize.desktop,
+  },
+  coursesSearchBar: {
+    height: coursesResponsiveDimensions.searchBarHeight.desktop,
+    paddingHorizontal: 20,
+  },
+  coursesSearchInput: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.desktop,
+  },
+  coursesCategoriesContainer: {
+    paddingVertical: coursesResponsiveDimensions.sectionSpacing.desktop,
+  },
+  categoryChip: {
+    paddingHorizontal: coursesResponsiveDimensions.categoryChipPadding.desktop.horizontal,
+    paddingVertical: coursesResponsiveDimensions.categoryChipPadding.desktop.vertical,
+  },
+  categoryText: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.desktop,
+  },
+  coursesList: {
+    paddingVertical: coursesResponsiveDimensions.sectionSpacing.desktop,
+  },
+  courseCard: {
+    padding: 20,
+    marginBottom: coursesResponsiveDimensions.cardSpacing.desktop,
+    flex: 1,
+    marginHorizontal: 6,
+  },
+  courseTitle: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.desktop,
+    lineHeight: 26,
+  },
+  courseInstructor: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.desktop,
+  },
+  ratingText: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.desktop,
+  },
+  courseDescription: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.desktop,
+    lineHeight: 24,
+  },
+  metaText: {
+    fontSize: coursesResponsiveDimensions.metaTextSize.desktop,
+  },
+  priceText: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.desktop,
+  },
+  coursesErrorText: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.desktop,
+  },
+  coursesErrorSubtext: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.desktop,
+  },
+  coursesRetryButtonText: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.desktop,
+  },
+  coursesEmptyText: {
+    fontSize: coursesResponsiveDimensions.subtitleSize.desktop,
+  },
+  coursesEmptySubtext: {
+    fontSize: coursesResponsiveDimensions.bodyTextSize.desktop,
+  },
+  skillsText: {
+    fontSize: coursesResponsiveDimensions.metaTextSize.desktop,
+  },
+});
+
+export const getResponsiveCoursesStyles = () => {
+  const styles = { ...coursesBaseStyles } as any;
+  
+  if (isWeb) {
+    // Apply web styles
+    Object.keys(coursesWebStyles).forEach(key => {
+      if (styles[key]) {
+        styles[key] = { ...styles[key], ...coursesWebStyles[key as keyof typeof coursesWebStyles] };
+      } else {
+        styles[key] = coursesWebStyles[key as keyof typeof coursesWebStyles];
+      }
+    });
+    
+    // Apply desktop styles
+    if (isDesktop) {
+      Object.keys(coursesDesktopStyles).forEach(key => {
+        if (styles[key]) {
+          styles[key] = { ...styles[key], ...coursesDesktopStyles[key as keyof typeof coursesDesktopStyles] };
+        } else {
+          styles[key] = coursesDesktopStyles[key as keyof typeof coursesDesktopStyles];
         }
       });
     }

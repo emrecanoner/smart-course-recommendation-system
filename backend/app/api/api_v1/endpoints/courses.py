@@ -10,17 +10,17 @@ from sqlalchemy.orm import Session
 from app.core import security
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.course import CourseResponse, CourseCreate, CourseUpdate
+from app.schemas.course import CourseResponse, CourseCreate, CourseUpdate, PaginatedResponse, CategoryResponse
 from app.services.course_service import CourseService
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[CourseResponse])
+@router.get("/", response_model=PaginatedResponse[CourseResponse])
 def read_courses(
     db: Session = Depends(get_db),
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(20, ge=1, le=100, description="Number of records per page"),
     category: str = Query(None, description="Filter by category"),
     search: str = Query(None, description="Search in course title and description"),
 ) -> Any:
@@ -29,22 +29,38 @@ def read_courses(
     
     Args:
         db: Database session
-        skip: Number of records to skip
-        limit: Number of records to return
+        page: Page number (1-based)
+        size: Number of records per page
         category: Filter by category
         search: Search term
         
     Returns:
-        List[CourseResponse]: List of courses
+        PaginatedResponse[CourseResponse]: Paginated list of courses
     """
     course_service = CourseService(db)
+    skip = (page - 1) * size
+    
+    # Get courses and total count
     courses = course_service.get_multi(
         skip=skip, 
-        limit=limit, 
+        limit=size, 
         category=category, 
         search=search
     )
-    return courses
+    
+    # Get total count for pagination
+    total = course_service.get_count(category=category, search=search)
+    pages = (total + size - 1) // size  # Ceiling division
+    
+    return PaginatedResponse(
+        items=courses,
+        total=total,
+        page=page,
+        size=size,
+        pages=pages,
+        has_next=page < pages,
+        has_previous=page > 1
+    )
 
 
 @router.get("/{course_id}", response_model=CourseResponse)
@@ -74,6 +90,24 @@ def read_course(
             detail="The course with this ID does not exist in the system",
         )
     return course
+
+
+@router.get("/categories/", response_model=List[CategoryResponse])
+def read_categories(
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Retrieve all active categories.
+    
+    Args:
+        db: Database session
+        
+    Returns:
+        List[CategoryResponse]: List of active categories
+    """
+    course_service = CourseService(db)
+    categories = course_service.get_categories()
+    return categories
 
 
 @router.post("/", response_model=CourseResponse)
