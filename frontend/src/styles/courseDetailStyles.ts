@@ -106,7 +106,7 @@ const courseDetailBaseStyles = StyleSheet.create({
     fontSize: courseDetailResponsiveDimensions.titleSize.mobile,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 24,
+    marginBottom: 10,
   },
   courseDetailInstructorRating: {
     marginBottom: 20,
@@ -124,7 +124,7 @@ const courseDetailBaseStyles = StyleSheet.create({
   courseDetailRatingText: {
     fontSize: courseDetailResponsiveDimensions.bodySize.mobile,
     color: '#666',
-    marginLeft: 4,
+    marginLeft: 6,
   },
   courseDetailMeta: {
     flexDirection: 'row',
@@ -308,12 +308,14 @@ const courseDetailWebStyles = StyleSheet.create({
   },
   courseDetailTitle: {
     fontSize: courseDetailResponsiveDimensions.titleSize.tablet,
+    marginBottom: 10,
   },
   courseDetailInstructor: {
     fontSize: courseDetailResponsiveDimensions.bodySize.tablet,
   },
   courseDetailRatingText: {
     fontSize: courseDetailResponsiveDimensions.bodySize.tablet,
+    marginLeft: 6,
   },
   courseDetailMetaText: {
     fontSize: courseDetailResponsiveDimensions.bodySize.tablet,
@@ -365,12 +367,14 @@ const courseDetailDesktopStyles = StyleSheet.create({
   },
   courseDetailTitle: {
     fontSize: courseDetailResponsiveDimensions.titleSize.desktop,
+    marginBottom: 10,
   },
   courseDetailInstructor: {
     fontSize: courseDetailResponsiveDimensions.bodySize.desktop,
   },
   courseDetailRatingText: {
     fontSize: courseDetailResponsiveDimensions.bodySize.desktop,
+    marginLeft: 6,
   },
   courseDetailMetaText: {
     fontSize: courseDetailResponsiveDimensions.bodySize.desktop,
