@@ -39,6 +39,7 @@ class User(Base):
     # Relationships
     interactions = relationship("UserInteraction", back_populates="user")
     recommendations = relationship("Recommendation", back_populates="user")
+    enrollments = relationship("Enrollment", back_populates="user")
     
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email='{self.email}', username='{self.username}')>"

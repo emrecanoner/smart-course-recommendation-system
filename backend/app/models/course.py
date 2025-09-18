@@ -83,6 +83,7 @@ class Course(Base):
     category = relationship("Category", back_populates="courses")
     recommendations = relationship("Recommendation", back_populates="course")
     interactions = relationship("UserInteraction", back_populates="course")
+    enrollments = relationship("Enrollment", back_populates="course")
     
     def __repr__(self) -> str:
         return f"<Course(id={self.id}, title='{self.title}')>"

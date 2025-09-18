@@ -12,10 +12,14 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { fetchCourse, setSelectedCourse } from '../store/slices/courseSlice';
-import { fetchSimilarCourses } from '../store/slices/recommendationSlice';
+// import { fetchSimilarCourses } from '../store/slices/recommendationSlice';
+import { createEnrollment, checkEnrollment, unenrollFromCourse } from '../store/slices/enrollmentSlice';
 import { Course, Recommendation } from '../types';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { getResponsiveCourseDetailStyles } from '../styles/courseDetailStyles';
+import { isWeb, isTablet, isDesktop, isMobile } from '../styles/responsiveStyles';
+import LoadingComponent from '../components/LoadingComponent';
+import Button from '../components/Button';
 
 interface CourseDetailScreenProps {
   navigation: any;
@@ -29,46 +33,166 @@ interface CourseDetailScreenProps {
 const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, route }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { selectedCourse, isLoading, error } = useSelector((state: RootState) => state.courses);
-  const { recommendations: similarCourses } = useSelector((state: RootState) => state.recommendations);
+  // const { recommendations: similarCourses } = useSelector((state: RootState) => state.recommendations);
+  const { isLoading: enrollmentLoading, enrollments, enrollmentStatus } = useSelector((state: RootState) => state.enrollments);
   const [isEnrolled, setIsEnrolled] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
 
   const { courseId } = route.params;
+  const styles = getResponsiveCourseDetailStyles();
 
   useEffect(() => {
     dispatch(fetchCourse(courseId));
-    dispatch(fetchSimilarCourses({ courseId, limit: 3 }));
+    // dispatch(fetchSimilarCourses({ courseId, limit: 3 }));
+    dispatch(checkEnrollment(courseId));
   }, [dispatch, courseId]);
 
-  const handleEnroll = () => {
-    if (selectedCourse?.is_free) {
-      Alert.alert(
-        'Enroll in Course',
-        `Are you sure you want to enroll in "${selectedCourse.title}"?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Enroll', onPress: () => setIsEnrolled(true) },
-        ]
-      );
+  // Check if user is enrolled in this course
+  useEffect(() => {
+    // First check enrollmentStatus from checkEnrollment API
+    if (enrollmentStatus[courseId] !== undefined) {
+      setIsEnrolled(enrollmentStatus[courseId]);
     } else {
-      Alert.alert(
-        'Purchase Course',
-        `This course costs $${selectedCourse?.price}. Would you like to proceed with the purchase?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Purchase', onPress: () => setIsEnrolled(true) },
-        ]
+      // Fallback to enrollments array
+      const enrolled = enrollments.some(enrollment => 
+        enrollment.course_id === courseId && enrollment.is_active
       );
+      setIsEnrolled(enrolled);
+    }
+  }, [enrollments, enrollmentStatus, courseId]);
+
+  const handleEnroll = () => {
+    if (selectedCourse) {
+      if (isEnrolled) {
+        // Unenroll confirmation
+        if (isWeb) {
+          const confirmed = window.confirm(`Are you sure you want to unenroll from "${selectedCourse.title}"?`);
+          if (confirmed) {
+            performUnenrollment();
+          }
+        } else {
+          Alert.alert(
+            'Unenroll from Course',
+            `Are you sure you want to unenroll from "${selectedCourse.title}"?`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Unenroll', 
+                onPress: performUnenrollment
+              },
+            ]
+          );
+        }
+      } else {
+        // Enroll confirmation
+        if (isWeb) {
+          const confirmed = window.confirm(`Are you sure you want to enroll in "${selectedCourse.title}"?`);
+          if (confirmed) {
+            performEnrollment();
+          }
+        } else {
+          Alert.alert(
+            'Enroll in Course',
+            `Are you sure you want to enroll in "${selectedCourse.title}"?`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Enroll', 
+                onPress: performEnrollment
+              },
+            ]
+          );
+        }
+      }
     }
   };
 
-  const handleToggleFavorite = () => {
-    setIsFavorite(!isFavorite);
+  const performEnrollment = async () => {
+    try {
+      const result = await dispatch(createEnrollment({ course_id: courseId })).unwrap();
+      setIsEnrolled(true);
+      
+      if (isWeb) {
+        alert('Successfully enrolled in the course!');
+      } else {
+        Alert.alert('Success', 'Successfully enrolled in the course!');
+      }
+    } catch (error) {
+      const errorMessage = `Failed to enroll in the course: ${error}`;
+      
+      if (isWeb) {
+        alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    }
   };
 
-  const handleSimilarCoursePress = (courseId: number) => {
-    navigation.navigate('CourseDetail', { courseId });
+  const performUnenrollment = async () => {
+    try {
+      const result = await dispatch(unenrollFromCourse(courseId)).unwrap();
+      setIsEnrolled(false);
+      
+      if (isWeb) {
+        alert('Successfully unenrolled from the course!');
+      } else {
+        Alert.alert('Success', 'Successfully unenrolled from the course!');
+      }
+    } catch (error) {
+      const errorMessage = `Failed to unenroll from the course: ${error}`;
+      
+      if (isWeb) {
+        alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    }
   };
+
+  const formatSkills = (skills: string | undefined): string => {
+    if (!skills || skills.trim() === '' || skills.trim() === '[]') return 'No skillset defined';
+    
+    try {
+      // If it comes as string array format (e.g., "['skill1', 'skill2']")
+      if (skills.startsWith("['") && skills.endsWith("']") || 
+          skills.startsWith('["') && skills.endsWith('"]')) {
+        const arrayString = skills.slice(1, -1); // Remove first and last characters
+        const skillsArray = arrayString.split("', '").map(skill => 
+          skill.replace(/['"]/g, '').trim()
+        );
+        return skillsArray
+          .map((skill: string) => {
+            return skill.charAt(0).toUpperCase() + skill.slice(1).toLowerCase();
+          })
+          .join(', ');
+      }
+      
+      // If it comes as real JSON array format, parse it
+      if (skills.startsWith('[') && skills.endsWith(']')) {
+        const skillsArray = JSON.parse(skills);
+        return skillsArray
+          .map((skill: string) => {
+            const trimmed = skill.trim().replace(/['"]/g, '');
+            return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+          })
+          .join(', ');
+      }
+      
+      // If it's comma-separated string, format directly
+      return skills
+        .split(',')
+        .map(skill => {
+          const trimmed = skill.trim().replace(/['"]/g, '');
+          return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+        })
+        .join(', ');
+    } catch (error) {
+      return skills; // Return original string in case of parse error
+    }
+  };
+
+  // const handleSimilarCoursePress = (courseId: number) => {
+  //   navigation.navigate('CourseDetail', { courseId });
+  // };
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -91,49 +215,36 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
     return stars;
   };
 
-  const renderSimilarCourse = ({ item }: { item: Recommendation }) => (
-    <TouchableOpacity
-      style={styles.similarCourseCard}
-      onPress={() => handleSimilarCoursePress(item.course_id)}
-    >
-      <View style={styles.similarCourseHeader}>
-        <Text style={styles.similarCourseTitle} numberOfLines={2}>
-          {item.title}
-        </Text>
-        <View style={styles.similarCourseRating}>
-          <Ionicons name="star" size={14} color="#FFD700" />
-          <Text style={styles.similarRatingText}>{item.rating.toFixed(1)}</Text>
-        </View>
-      </View>
-      <Text style={styles.similarCourseInstructor}>{item.instructor}</Text>
-      <Text style={styles.similarCoursePrice}>
-        {item.is_free ? 'Free' : `$${item.price}`}
-      </Text>
-    </TouchableOpacity>
-  );
+  // const renderSimilarCourse = ({ item }: { item: Recommendation }) => (
+  //   <TouchableOpacity
+  //     style={styles.courseDetailSimilarCard}
+  //     onPress={() => handleSimilarCoursePress(item.course_id)}
+  //   >
+  //     <Text style={styles.courseDetailSimilarCardTitle} numberOfLines={2}>
+  //       {item.title}
+  //     </Text>
+  //     <Text style={styles.courseDetailSimilarCardDescription} numberOfLines={3}>
+  //       {item.instructor} • {item.is_free ? 'Free' : `$${item.price}`}
+  //     </Text>
+  //   </TouchableOpacity>
+  // );
 
   if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading course details...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingComponent />;
   }
 
   if (error || !selectedCourse) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
+      <SafeAreaView style={styles.courseDetailContainer}>
+        <View style={styles.courseDetailError}>
           <Ionicons name="alert-circle" size={50} color="#ff6b6b" />
-          <Text style={styles.errorText}>Failed to load course</Text>
-          <Text style={styles.errorSubtext}>{error}</Text>
+          <Text style={styles.courseDetailErrorText}>Failed to load course</Text>
+          <Text style={styles.courseDetailErrorText}>{error}</Text>
           <TouchableOpacity
-            style={styles.retryButton}
+            style={styles.courseDetailRetryButton}
             onPress={() => dispatch(fetchCourse(courseId))}
           >
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.courseDetailRetryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -141,400 +252,122 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.courseDetailContainer}>
+      <ScrollView 
+        style={styles.courseDetailScrollContent}
+        showsVerticalScrollIndicator={false}
+        {...(isWeb && {
+          scrollEventThrottle: 16,
+          nestedScrollEnabled: true,
+        })}
+      >
         {/* Header */}
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.header}
-        >
-          <View style={styles.headerContent}>
+        <View style={styles.courseDetailHeader}>
+          <View style={styles.courseDetailHeaderContent}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={styles.courseDetailBackButton}
               onPress={() => navigation.goBack()}
             >
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.favoriteButton}
-              onPress={handleToggleFavorite}
-            >
-              <Ionicons
-                name={isFavorite ? "heart" : "heart-outline"}
-                size={24}
-                color={isFavorite ? "#ff6b6b" : "white"}
+              <Ionicons 
+                name="arrow-back" 
+                size={isDesktop ? 28 : isTablet ? 26 : 24} 
+                color="#666" 
               />
             </TouchableOpacity>
-          </View>
-        </LinearGradient>
-
-        {/* Course Image Placeholder */}
-        <View style={styles.imageContainer}>
-          <View style={styles.imagePlaceholder}>
-            <Ionicons name="play-circle" size={60} color="#667eea" />
-            <Text style={styles.imagePlaceholderText}>Course Preview</Text>
+            <Text style={styles.courseDetailHeaderTitle}>
+              {isDesktop ? 'Course Details' : 'Course Details'}
+            </Text>
+            <View style={styles.courseDetailHeaderPlaceholder} />
           </View>
         </View>
 
+
         {/* Course Info */}
-        <View style={styles.courseInfo}>
-          <View style={styles.courseHeader}>
-            <Text style={styles.courseTitle}>{selectedCourse.title}</Text>
-            {selectedCourse.is_featured && (
-              <View style={styles.featuredBadge}>
-                <Text style={styles.featuredText}>Featured</Text>
-              </View>
-            )}
-          </View>
-
-          <Text style={styles.courseInstructor}>by {selectedCourse.instructor}</Text>
-
-          <View style={styles.ratingContainer}>
-            <View style={styles.starsContainer}>
+        <View style={styles.courseDetailInfo}>
+          <Text style={styles.courseDetailTitle}>{selectedCourse.title}</Text>
+          
+          <View style={styles.courseDetailInstructorRating}>
+            <Text style={styles.courseDetailInstructor}>by {selectedCourse.instructor}</Text>
+            <View style={styles.courseDetailRating}>
               {renderStars(selectedCourse.rating)}
+              <Text style={styles.courseDetailRatingText}>
+                {Math.round(selectedCourse.rating)} ({selectedCourse.rating_count} reviews)
+              </Text>
             </View>
-            <Text style={styles.ratingText}>
-              {selectedCourse.rating.toFixed(1)} ({selectedCourse.rating_count} reviews)
-            </Text>
           </View>
 
-          <View style={styles.courseMeta}>
-            <View style={styles.metaItem}>
+          <View style={styles.courseDetailMeta}>
+            <View style={styles.courseDetailMetaItem}>
               <Ionicons name="time" size={16} color="#666" />
-              <Text style={styles.metaText}>{selectedCourse.duration_hours} hours</Text>
+              <Text style={styles.courseDetailMetaText}>{selectedCourse.duration_hours} hours</Text>
             </View>
-            <View style={styles.metaItem}>
+            <View style={styles.courseDetailMetaItem}>
               <Ionicons name="people" size={16} color="#666" />
-              <Text style={styles.metaText}>{selectedCourse.enrollment_count} students</Text>
+              <Text style={styles.courseDetailMetaText}>{selectedCourse.enrollment_count} students</Text>
             </View>
-            <View style={styles.metaItem}>
+            <View style={styles.courseDetailMetaItem}>
               <Ionicons name="trending-up" size={16} color="#666" />
-              <Text style={styles.metaText}>{selectedCourse.completion_rate}% completion</Text>
+              <Text style={styles.courseDetailMetaText}>{Math.round(selectedCourse.completion_rate)}% completion</Text>
             </View>
-          </View>
-
-          <View style={styles.courseDetails}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Language:</Text>
-              <Text style={styles.detailValue}>{selectedCourse.language}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Difficulty:</Text>
-              <Text style={styles.detailValue}>{selectedCourse.difficulty_level}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Type:</Text>
-              <Text style={styles.detailValue}>{selectedCourse.content_type}</Text>
-            </View>
-            {selectedCourse.has_certificate && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Certificate:</Text>
-                <Text style={styles.detailValue}>Available</Text>
-              </View>
-            )}
           </View>
         </View>
 
         {/* Description */}
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.sectionTitle}>About This Course</Text>
-          <Text style={styles.description}>{selectedCourse.description}</Text>
+        <View style={styles.courseDetailInfo}>
+          <Text style={styles.courseDetailDescription}>{selectedCourse.description}</Text>
         </View>
 
-        {/* Similar Courses */}
-        {similarCourses.length > 0 && (
-          <View style={styles.similarCoursesContainer}>
-            <Text style={styles.sectionTitle}>Similar Courses</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {similarCourses.map((course: Recommendation) => (
-                <View key={course.course_id} style={styles.similarCourseWrapper}>
-                  {renderSimilarCourse({ item: course })}
-                </View>
-              ))}
-            </ScrollView>
+        {/* Course Content Info */}
+        <View style={styles.courseDetailInfo}>
+          <Text style={styles.courseDetailContentTitle}>Course Content</Text>
+          <View style={styles.courseDetailContentItems}>
+            <View style={styles.courseDetailContentItem}>
+              <Ionicons name="play-circle" size={16} color="#007AFF" />
+              <Text style={styles.courseDetailContentText}>3 videos</Text>
+            </View>
+            <View style={styles.courseDetailContentItem}>
+              <Ionicons name="document-text" size={16} color="#007AFF" />
+              <Text style={styles.courseDetailContentText}>1 assignment</Text>
+            </View>
+            <View style={styles.courseDetailContentItem}>
+              <Ionicons name="book" size={16} color="#007AFF" />
+              <Text style={styles.courseDetailContentText}>1 reading</Text>
+            </View>
+            <View style={styles.courseDetailContentItem}>
+              <Ionicons name="extension-puzzle" size={16} color="#007AFF" />
+              <Text style={styles.courseDetailContentText}>1 plugin</Text>
+            </View>
           </View>
-        )}
-      </ScrollView>
-
-      {/* Bottom Action Bar */}
-      <View style={styles.bottomBar}>
-        <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>Price</Text>
-          <Text style={styles.priceText}>
-            {selectedCourse.is_free ? 'Free' : `$${selectedCourse.price}`}
-          </Text>
         </View>
-        <TouchableOpacity
-          style={[
-            styles.enrollButton,
-            isEnrolled && styles.enrolledButton,
-          ]}
-          onPress={handleEnroll}
-        >
-          <Text style={styles.enrollButtonText}>
-            {isEnrolled ? 'Enrolled' : selectedCourse.is_free ? 'Enroll Free' : 'Purchase'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+
+        {/* Skills */}
+        <View style={styles.courseDetailSkills}>
+          <Text style={styles.courseDetailSkillsTitle}>Skills You'll Learn</Text>
+          <View style={styles.courseDetailSkillsContainer}>
+            {formatSkills(selectedCourse.skills).split(', ').map((skill, index) => (
+              <View key={index} style={styles.courseDetailSkillTag}>
+                <Text style={styles.courseDetailSkillText}>{skill}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+
+        {/* Actions */}
+        <View style={styles.courseDetailActions}>
+          <Button
+            title={isEnrolled ? 'Unenroll' : 'Enroll Now'}
+            onPress={handleEnroll}
+            variant={isEnrolled ? 'secondary' : 'primary'}
+            disabled={enrollmentLoading}
+            icon={isEnrolled ? <Ionicons name="close-circle" size={20} color="#ffffff" /> : undefined}
+            style={styles.courseDetailEnrollButton}
+          />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    padding: 5,
-  },
-  favoriteButton: {
-    padding: 5,
-  },
-  imageContainer: {
-    height: 200,
-    backgroundColor: '#e0e0e0',
-  },
-  imagePlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagePlaceholderText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 10,
-  },
-  courseInfo: {
-    backgroundColor: 'white',
-    padding: 20,
-    marginTop: -20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  courseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  courseTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-    marginRight: 10,
-  },
-  featuredBadge: {
-    backgroundColor: '#ff6b6b',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  featuredText: {
-    fontSize: 10,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  courseInstructor: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 15,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  starsContainer: {
-    flexDirection: 'row',
-    marginRight: 10,
-  },
-  ratingText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  courseMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-    paddingVertical: 15,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  metaText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 5,
-  },
-  courseDetails: {
-    marginBottom: 20,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  detailValue: {
-    fontSize: 14,
-    color: '#333',
-  },
-  descriptionContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    marginTop: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 22,
-  },
-  similarCoursesContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    marginTop: 10,
-  },
-  similarCourseWrapper: {
-    marginRight: 15,
-  },
-  similarCourseCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 15,
-    width: 200,
-  },
-  similarCourseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  similarCourseTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-    marginRight: 8,
-  },
-  similarCourseRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  similarRatingText: {
-    fontSize: 12,
-    color: '#333',
-    marginLeft: 3,
-  },
-  similarCourseInstructor: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-  },
-  similarCoursePrice: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#667eea',
-  },
-  bottomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  priceContainer: {
-    flex: 1,
-  },
-  priceLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
-  priceText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  enrollButton: {
-    backgroundColor: '#667eea',
-    borderRadius: 12,
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-  },
-  enrolledButton: {
-    backgroundColor: '#4CAF50',
-  },
-  enrollButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#ff6b6b',
-    marginTop: 15,
-    textAlign: 'center',
-  },
-  errorSubtext: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#667eea',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginTop: 20,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
 
 export default CourseDetailScreen;

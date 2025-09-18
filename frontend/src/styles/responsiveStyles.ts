@@ -1166,23 +1166,23 @@ export const coursesResponsiveDimensions = {
     desktop: 20,
   },
   titleSize: {
-    mobile: 18,
-    tablet: 20,
-    desktop: 24,
+    mobile: 32,
+    tablet: 27,
+    desktop: 36,
   },
   subtitleSize: {
-    mobile: 14,
-    tablet: 16,
+    mobile: 16,
+    tablet: 13,
     desktop: 18,
   },
   bodyTextSize: {
-    mobile: 12,
-    tablet: 14,
+    mobile: 14,
+    tablet: 12,
     desktop: 16,
   },
   metaTextSize: {
-    mobile: 10,
-    tablet: 12,
+    mobile: 12,
+    tablet: 10,
     desktop: 14,
   },
 };

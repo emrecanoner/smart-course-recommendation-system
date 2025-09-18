@@ -157,3 +157,45 @@ export interface RecommendationState {
   isLoading: boolean;
   error: string | null;
 }
+
+// Enrollment types
+export interface Enrollment {
+  id: number;
+  user_id: number;
+  course_id: number;
+  is_active: boolean;
+  enrollment_date: string;
+  completion_percentage: number;
+  last_accessed?: string;
+  is_completed: boolean;
+  completion_date?: string;
+  created_at: string;
+  updated_at: string;
+  course?: Course;
+}
+
+export interface EnrollmentCreate {
+  course_id: number;
+}
+
+export interface EnrollmentUpdate {
+  completion_percentage?: number;
+  last_accessed?: string;
+  is_completed?: boolean;
+  completion_date?: string;
+}
+
+export interface EnrollmentStats {
+  total_enrollments: number;
+  completed_courses: number;
+  in_progress_courses: number;
+  completion_rate: number;
+  total_study_time?: number;
+}
+
+export interface EnrollmentState {
+  enrollments: Enrollment[];
+  isLoading: boolean;
+  error: string | null;
+  stats: EnrollmentStats | null;
+}

@@ -8,7 +8,11 @@ import {
   Recommendation,
   RecommendationRequest,
   ApiResponse,
-  Category
+  Category,
+  Enrollment,
+  EnrollmentCreate,
+  EnrollmentUpdate,
+  EnrollmentStats
 } from '../types';
 
 // API Configuration
@@ -160,6 +164,39 @@ class ApiService {
   // Logout
   logout(): void {
     this.clearToken();
+  }
+
+  // Enrollment methods
+  async getEnrollments(): Promise<Enrollment[]> {
+    const response: AxiosResponse<Enrollment[]> = await this.api.get('/enrollments/');
+    return response.data;
+  }
+
+  async createEnrollment(enrollmentData: EnrollmentCreate): Promise<Enrollment> {
+    const response: AxiosResponse<Enrollment> = await this.api.post('/enrollments/', enrollmentData);
+    return response.data;
+  }
+
+  async checkEnrollment(courseId: number): Promise<{ is_enrolled: boolean }> {
+    const response: AxiosResponse<{ is_enrolled: boolean }> = await this.api.get(`/enrollments/check/${courseId}`);
+    return response.data;
+  }
+
+  async updateProgress(courseId: number, completionPercentage: number): Promise<any> {
+    const response = await this.api.put(`/enrollments/progress/${courseId}`, null, {
+      params: { completion_percentage: completionPercentage }
+    });
+    return response.data;
+  }
+
+  async getEnrollmentStats(): Promise<EnrollmentStats> {
+    const response: AxiosResponse<EnrollmentStats> = await this.api.get('/enrollments/stats');
+    return response.data;
+  }
+
+  async unenrollFromCourse(courseId: number): Promise<{ message: string }> {
+    const response: AxiosResponse<{ message: string }> = await this.api.delete(`/enrollments/${courseId}`);
+    return response.data;
   }
 }
 

@@ -4,7 +4,7 @@ Main API router that includes all endpoint routers.
 
 from fastapi import APIRouter
 
-from app.api.api_v1.endpoints import auth, users, courses, recommendations
+from app.api.api_v1.endpoints import auth, users, courses, recommendations, enrollments
 
 api_router = APIRouter()
 
@@ -17,3 +17,4 @@ api_router.include_router(
     prefix="/recommendations", 
     tags=["recommendations"]
 )
+api_router.include_router(enrollments.router, prefix="/enrollments", tags=["enrollments"])
