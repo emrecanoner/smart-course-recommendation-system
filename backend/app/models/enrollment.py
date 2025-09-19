@@ -22,7 +22,7 @@ class Enrollment(Base):
     
     # Enrollment metadata
     is_active = Column(Boolean, default=True, nullable=False)
-    deleted_date = Column(DateTime, nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
     enrollment_date = Column(DateTime, default=datetime.utcnow, nullable=False)
     completion_percentage = Column(Float, default=0.0, nullable=False)  # 0.0 to 100.0
     last_accessed = Column(DateTime, nullable=True)

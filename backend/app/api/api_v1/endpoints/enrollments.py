@@ -48,7 +48,7 @@ def read_user_enrollments(
             "user_id": enrollment.user_id,
             "course_id": enrollment.course_id,
             "is_active": enrollment.is_active,
-            "deleted_date": enrollment.deleted_date,
+            "deleted_at": enrollment.deleted_at,
             "enrollment_date": enrollment.enrollment_date,
             "completion_percentage": enrollment.completion_percentage,
             "last_accessed": enrollment.last_accessed,

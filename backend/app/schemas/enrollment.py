@@ -30,7 +30,7 @@ class EnrollmentResponse(EnrollmentBase):
     id: int
     user_id: int
     is_active: bool
-    deleted_date: Optional[datetime]
+    deleted_at: Optional[datetime]
     enrollment_date: datetime
     completion_percentage: float
     last_accessed: Optional[datetime]

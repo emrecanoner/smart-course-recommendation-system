@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -23,6 +22,7 @@ import {
   isTablet,
   isDesktop 
 } from '../styles/responsiveStyles';
+import { validateField, validateFields } from '../utils/validation';
 
 interface RegisterScreenProps {
   navigation: any;
@@ -62,71 +62,26 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
 
   const handleInputBlur = (field: string) => {
     setTouched(prev => ({ ...prev, [field]: true }));
-    validateField(field, formData[field as keyof typeof formData]);
+    handleValidateField(field, formData[field as keyof typeof formData]);
   };
 
-  const validateEmail = (email: string): string => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim()) return 'Email is required';
-    if (!emailRegex.test(email)) return 'Please enter a valid email address';
-    return '';
-  };
-
-  const validatePassword = (password: string): string => {
-    if (!password.trim()) return 'Password is required';
-    if (password.length < 8) return 'Password must be at least 8 characters long';
-    if (!/(?=.*[a-z])/.test(password)) return 'Password must contain at least one lowercase letter';
-    if (!/(?=.*[A-Z])/.test(password)) return 'Password must contain at least one uppercase letter';
-    if (!/(?=.*\d)/.test(password)) return 'Password must contain at least one number';
-    return '';
-  };
-
-  const validateUsername = (username: string): string => {
-    if (!username.trim()) return 'Username is required';
-    if (username.length < 3) return 'Username must be at least 3 characters long';
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) return 'Username can only contain letters, numbers, and underscores';
-    return '';
-  };
-
-  const validateField = (field: string, value: string) => {
-    let error = '';
-    
-    switch (field) {
-      case 'email':
-        error = validateEmail(value);
-        break;
-      case 'password':
-        error = validatePassword(value);
-        break;
-      case 'username':
-        error = validateUsername(value);
-        break;
-      case 'confirmPassword':
-        if (!value.trim()) {
-          error = 'Please confirm your password';
-        } else if (value !== formData.password) {
-          error = 'Passwords do not match';
-        }
-        break;
-    }
-    
-    setErrors(prev => ({ ...prev, [field]: error }));
+  const handleValidateField = (field: string, value: string) => {
+    const result = validateField(field, value, field === 'confirmPassword' ? formData.password : undefined);
+    setErrors(prev => ({ ...prev, [field]: result.error }));
   };
 
   const validateForm = () => {
-    const fields = ['email', 'username', 'password', 'confirmPassword'];
-    let isValid = true;
-    const newErrors: {[key: string]: string} = {};
-
-    fields.forEach(field => {
-      const value = formData[field as keyof typeof formData];
-      validateField(field, value);
-      if (errors[field] || !value.trim()) {
-        isValid = false;
-      }
-    });
-
-    return isValid;
+    const fieldsToValidate = {
+      email: formData.email,
+      username: formData.username,
+      password: formData.password,
+      confirmPassword: formData.confirmPassword
+    };
+    
+    const validationErrors = validateFields(fieldsToValidate);
+    setErrors(validationErrors);
+    
+    return Object.keys(validationErrors).length === 0;
   };
 
   const handleRegister = async () => {

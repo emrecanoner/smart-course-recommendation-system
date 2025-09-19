@@ -388,7 +388,6 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
             variant={isEnrolled ? 'secondary' : 'primary'}
             disabled={enrollmentLoading}
             icon={isEnrolled ? <Ionicons name="close-circle" size={20} color="#ffffff" /> : undefined}
-            style={styles.courseDetailEnrollButton}
           />
         </View>
       </ScrollView>

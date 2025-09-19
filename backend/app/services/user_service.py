@@ -86,11 +86,26 @@ class UserService:
             
         Returns:
             User: Updated user
+            
+        Raises:
+            ValueError: If email or username already exists
         """
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
             update_data = obj_in.dict(exclude_unset=True)
+        
+        # Check for duplicate email
+        if "email" in update_data and update_data["email"] != db_obj.email:
+            existing_user = self.get_by_email(email=update_data["email"])
+            if existing_user and existing_user.id != db_obj.id:
+                raise ValueError("The user with this email already exists in the system.")
+        
+        # Check for duplicate username
+        if "username" in update_data and update_data["username"] != db_obj.username:
+            existing_user = self.get_by_username(username=update_data["username"])
+            if existing_user and existing_user.id != db_obj.id:
+                raise ValueError("The user with this username already exists in the system.")
         
         # Hash password if provided
         if "password" in update_data:
@@ -122,6 +137,14 @@ class UserService:
             return None
         if not verify_password(password, user.hashed_password):
             return None
+        
+        # Update last_login timestamp
+        from datetime import datetime
+        user.last_login = datetime.utcnow()
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        
         return user
     
     def is_active(self, user: User) -> bool:

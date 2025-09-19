@@ -44,7 +44,7 @@ class EnrollmentService:
             and_(
                 Enrollment.user_id == user_id, 
                 Enrollment.is_active == True,
-                Enrollment.deleted_date.is_(None)
+                Enrollment.deleted_at.is_(None)
             )
         ).order_by(Enrollment.enrollment_date.desc()).all()
     
@@ -64,7 +64,7 @@ class EnrollmentService:
             and_(
                 Enrollment.course_id == course_id, 
                 Enrollment.is_active == True,
-                Enrollment.deleted_date.is_(None)
+                Enrollment.deleted_at.is_(None)
             )
         ).order_by(Enrollment.enrollment_date.desc()).all()
     
@@ -84,7 +84,7 @@ class EnrollmentService:
                 Enrollment.user_id == user_id,
                 Enrollment.course_id == course_id,
                 Enrollment.is_active == True,
-                Enrollment.deleted_date.is_(None)
+                Enrollment.deleted_at.is_(None)
             )
         ).first()
         return enrollment is not None
@@ -105,7 +105,7 @@ class EnrollmentService:
                 Enrollment.user_id == user_id,
                 Enrollment.course_id == course_id,
                 Enrollment.is_active == True,
-                Enrollment.deleted_date.is_(None)
+                Enrollment.deleted_at.is_(None)
             )
         ).first()
     
@@ -132,7 +132,7 @@ class EnrollmentService:
             # If exists but inactive, reactivate it
             if not existing.is_active:
                 existing.is_active = True
-                existing.deleted_date = None  # Clear deleted date
+                existing.deleted_at = None  # Clear deleted date
                 existing.enrollment_date = func.now()
                 existing.completion_percentage = 0.0
                 existing.is_completed = False
@@ -252,7 +252,7 @@ class EnrollmentService:
                 Enrollment.user_id == user_id,
                 Enrollment.course_id == course_id,
                 Enrollment.is_active == True,
-                Enrollment.deleted_date.is_(None)
+                Enrollment.deleted_at.is_(None)
             )
         ).first()
         
@@ -260,7 +260,7 @@ class EnrollmentService:
             return None
         
         enrollment.is_active = False
-        enrollment.deleted_date = func.now()
+        enrollment.deleted_at = func.now()
         enrollment.updated_at = func.now()
         
         self.db.commit()

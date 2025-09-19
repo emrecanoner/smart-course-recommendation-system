@@ -180,6 +180,8 @@ export const baseStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
+    paddingHorizontal: 20,
+    borderWidth: 0,
     shadowColor: '#667eea',
     shadowOffset: {
       width: 0,
@@ -209,6 +211,34 @@ export const baseStyles = StyleSheet.create({
     color: '#667eea',
     fontSize: 16,
     fontWeight: '500',
+  },
+
+  navigationButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    flex: 1,
+    marginHorizontal: 5,
+    justifyContent: 'center',
+  },
+
+  navButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#667eea',
   },
   
   errorContainer: {
@@ -342,6 +372,8 @@ export const webStyles = StyleSheet.create({
   button: {
     height: responsiveDimensions.inputHeight.web,
     marginTop: 20,
+    paddingHorizontal: 20,
+    borderWidth: 0,
     ...(isWeb && {
       cursor: 'pointer',
       transition: 'all 0.3s ease',
@@ -392,6 +424,7 @@ export const getResponsiveStyles = () => {
   
   return styles;
 };
+
 
 // Helper function to get responsive icon size
 export const getIconSize = () => {
@@ -1195,6 +1228,7 @@ export const getResponsiveHomeStyles = () => {
   
   return styles;
 };
+
 
 // Courses Screen Styles
 export const coursesResponsiveDimensions = {

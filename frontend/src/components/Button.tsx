@@ -6,7 +6,9 @@ import {
   Animated,
   ViewStyle,
   TextStyle,
+  Platform,
 } from 'react-native';
+import { getResponsiveStyles } from '../styles/responsiveStyles';
 
 interface ButtonProps {
   title: string;
@@ -28,6 +30,7 @@ const Button: React.FC<ButtonProps> = ({
   textStyle,
 }) => {
   const backgroundColorRef = new Animated.Value(0);
+  const responsiveStyles = getResponsiveStyles();
 
   const handlePressIn = () => {
     if (!disabled) {
@@ -53,24 +56,21 @@ const Button: React.FC<ButtonProps> = ({
     switch (variant) {
       case 'success':
         return {
-          backgroundColor: disabled ? '#6c757d' : '#28a745',
-          borderColor: disabled ? '#6c757d' : '#1e7e34',
-          shadowColor: disabled ? '#6c757d' : '#28a745',
-          pressedColor: '#218838',
+          backgroundColor: disabled ? '#6c757d' : '#10b981', // Bright green
+          shadowColor: disabled ? '#6c757d' : '#10b981',
+          pressedColor: '#059669',
         };
       case 'secondary':
         return {
-          backgroundColor: disabled ? '#6c757d' : '#6c757d',
-          borderColor: disabled ? '#6c757d' : '#5a6268',
-          shadowColor: disabled ? '#6c757d' : '#6c757d',
-          pressedColor: '#5a6268',
+          backgroundColor: disabled ? '#6c757d' : '#ef4444', // Bright red
+          shadowColor: disabled ? '#6c757d' : '#ef4444',
+          pressedColor: '#dc2626',
         };
       default: // primary
         return {
-          backgroundColor: disabled ? '#6c757d' : '#4A90E2',
-          borderColor: disabled ? '#6c757d' : '#357ABD',
-          shadowColor: disabled ? '#6c757d' : '#4A90E2',
-          pressedColor: '#357ABD',
+          backgroundColor: disabled ? '#6c757d' : '#3b82f6', // Bright blue
+          shadowColor: disabled ? '#6c757d' : '#3b82f6',
+          pressedColor: '#2563eb',
         };
     }
   };
@@ -83,17 +83,18 @@ const Button: React.FC<ButtonProps> = ({
   });
 
   const buttonStyles = [
-    styles.button,
+    responsiveStyles.button,
     {
       backgroundColor: disabled ? variantStyles.backgroundColor : backgroundColor,
-      borderColor: variantStyles.borderColor,
+      borderWidth: 0,
       shadowColor: variantStyles.shadowColor,
+      opacity: disabled ? 0.6 : 1,
     },
     style,
   ];
 
   const textStyles = [
-    styles.buttonText,
+    responsiveStyles.buttonText,
     { color: disabled ? '#ffffff' : '#ffffff' },
     textStyle,
   ];
@@ -123,24 +124,6 @@ const Button: React.FC<ButtonProps> = ({
 };
 
 const styles = StyleSheet.create({
-  button: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-    minWidth: 200,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
   buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
