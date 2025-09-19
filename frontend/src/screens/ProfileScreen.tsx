@@ -2,7 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import LoadingComponent from '../components/LoadingComponent';
 
-const ProfileScreen: React.FC = () => {
+interface ProfileScreenProps {
+  navigation: any;
+}
+
+const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const [showPageLoading, setShowPageLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -13,6 +17,21 @@ const ProfileScreen: React.FC = () => {
     
     return () => clearTimeout(timer);
   }, []);
+
+  // Listen for navigation focus to refresh data
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Show loading when screen comes into focus
+      setShowPageLoading(true);
+      const timer = setTimeout(() => {
+        setShowPageLoading(false);
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   // Show loading screen when page opens
   if (showPageLoading) {

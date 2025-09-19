@@ -3,7 +3,7 @@ Enrollment service for enrollment management operations.
 """
 
 from typing import Any, List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, func
 
 from app.models.enrollment import Enrollment
@@ -38,7 +38,9 @@ class EnrollmentService:
         Returns:
             List[Enrollment]: List of user's enrollments
         """
-        return self.db.query(Enrollment).filter(
+        return self.db.query(Enrollment).options(
+            joinedload(Enrollment.course)
+        ).filter(
             and_(
                 Enrollment.user_id == user_id, 
                 Enrollment.is_active == True,
@@ -56,7 +58,9 @@ class EnrollmentService:
         Returns:
             List[Enrollment]: List of course enrollments
         """
-        return self.db.query(Enrollment).filter(
+        return self.db.query(Enrollment).options(
+            joinedload(Enrollment.course)
+        ).filter(
             and_(
                 Enrollment.course_id == course_id, 
                 Enrollment.is_active == True,

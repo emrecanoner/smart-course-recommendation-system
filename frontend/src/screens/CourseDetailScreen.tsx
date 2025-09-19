@@ -36,6 +36,7 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
   // const { recommendations: similarCourses } = useSelector((state: RootState) => state.recommendations);
   const { isLoading: enrollmentLoading, enrollments, enrollmentStatus } = useSelector((state: RootState) => state.enrollments);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [showPageLoading, setShowPageLoading] = React.useState(true);
 
   const { courseId } = route.params;
   const styles = getResponsiveCourseDetailStyles();
@@ -44,7 +45,33 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
     dispatch(fetchCourse(courseId));
     // dispatch(fetchSimilarCourses({ courseId, limit: 3 }));
     dispatch(checkEnrollment(courseId));
+    
+    // Show page loading for 1.5 seconds
+    const timer = setTimeout(() => {
+      setShowPageLoading(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
   }, [dispatch, courseId]);
+
+  // Listen for navigation focus to refresh data
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Show loading and refresh course details and enrollment status when screen comes into focus
+      setShowPageLoading(true);
+      dispatch(fetchCourse(courseId));
+      dispatch(checkEnrollment(courseId));
+      
+      // Hide loading after data is fetched
+      const timer = setTimeout(() => {
+        setShowPageLoading(false);
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    });
+
+    return unsubscribe;
+  }, [navigation, dispatch, courseId]);
 
   // Check if user is enrolled in this course
   useEffect(() => {
@@ -229,7 +256,7 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
   //   </TouchableOpacity>
   // );
 
-  if (isLoading) {
+  if (isLoading || showPageLoading) {
     return <LoadingComponent />;
   }
 
@@ -291,7 +318,7 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
             <View style={styles.courseDetailRating}>
               {renderStars(selectedCourse.rating)}
               <Text style={styles.courseDetailRatingText}>
-                {Math.round(selectedCourse.rating)} ({selectedCourse.rating_count} reviews)
+                {(selectedCourse.rating).toFixed(1)} ({selectedCourse.rating_count} reviews)
               </Text>
             </View>
           </View>
@@ -307,7 +334,7 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
             </View>
             <View style={styles.courseDetailMetaItem}>
               <Ionicons name="trending-up" size={16} color="#666" />
-              <Text style={styles.courseDetailMetaText}>{Math.round(selectedCourse.completion_rate)}% completion</Text>
+              <Text style={styles.courseDetailMetaText}>{selectedCourse.completion_rate.toFixed(1)}% completion</Text>
             </View>
           </View>
         </View>

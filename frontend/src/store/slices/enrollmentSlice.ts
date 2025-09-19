@@ -113,6 +113,10 @@ const enrollmentSlice = createSlice({
       .addCase(fetchEnrollments.fulfilled, (state, action) => {
         state.isLoading = false;
         state.enrollments = action.payload;
+        // Update enrollment status for all enrolled courses
+        action.payload.forEach((enrollment: any) => {
+          state.enrollmentStatus[enrollment.course_id] = true;
+        });
         state.error = null;
       })
       .addCase(fetchEnrollments.rejected, (state, action) => {
@@ -129,6 +133,8 @@ const enrollmentSlice = createSlice({
       .addCase(createEnrollment.fulfilled, (state, action) => {
         state.isLoading = false;
         state.enrollments.unshift(action.payload);
+        // Update enrollment status for this course
+        state.enrollmentStatus[action.payload.course_id] = true;
         state.error = null;
       })
       .addCase(createEnrollment.rejected, (state, action) => {

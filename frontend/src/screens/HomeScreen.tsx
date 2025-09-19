@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { fetchRecommendations } from '../store/slices/recommendationSlice';
+import { fetchEnrollments } from '../store/slices/enrollmentSlice';
 import { logout } from '../store/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
 import LoadingComponent from '../components/LoadingComponent';
@@ -28,15 +28,15 @@ interface HomeScreenProps {
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { recommendations, isLoading } = useSelector((state: RootState) => state.recommendations) as { recommendations: any[], isLoading: boolean };
+  const { enrollments, isLoading } = useSelector((state: RootState) => state.enrollments);
   const [showPageLoading, setShowPageLoading] = React.useState(true);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   
   const styles = getResponsiveHomeStyles();
 
   useEffect(() => {
-    // Fetch recommendations when component mounts
-    dispatch(fetchRecommendations({ limit: 5 }));
+    // Fetch enrolled courses when component mounts
+    dispatch(fetchEnrollments());
     
     // Show page loading for 1.5 seconds
     const timer = setTimeout(() => {
@@ -45,6 +45,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     
     return () => clearTimeout(timer);
   }, [dispatch]);
+
+  // Listen for navigation focus to refresh data
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Show loading and refresh enrolled courses when screen comes into focus
+      setShowPageLoading(true);
+      dispatch(fetchEnrollments());
+      
+      // Hide loading after data is fetched
+      const timer = setTimeout(() => {
+        setShowPageLoading(false);
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    });
+
+    return unsubscribe;
+  }, [navigation, dispatch]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -56,8 +74,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     navigation.navigate('Courses');
   };
 
-  const handleNavigateToRecommendations = () => {
-    navigation.navigate('Recommendations');
+  const handleNavigateToEnrollments = () => {
+    navigation.navigate('Courses');
   };
 
   const handleNavigateToProfile = () => {
@@ -117,7 +135,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <ScrollView 
           style={styles.homeScrollContent} 
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={styles.homeScrollContentStyle}
           {...(isWeb && {
             scrollEventThrottle: 16,
             nestedScrollEnabled: true,
@@ -170,7 +188,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   shadowColor: '#007bff',
                 }
               ]}
-              onPress={handleNavigateToRecommendations}
+              onPress={handleNavigateToEnrollments}
               onPressIn={() => isWeb && setHoveredCard('recommendations')}
               onPressOut={() => isWeb && setHoveredCard(null)}
             >
@@ -195,50 +213,30 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.homeSection}>
           {isMobile ? (
             // Mobile layout - stacked vertically
-            <View>
+            <View style={styles.homeSectionHeader}>
               <Text style={styles.homeSectionTitle}>
-                Recommended for You
+                Enrolled Courses
               </Text>
-              <TouchableOpacity 
-                onPress={handleNavigateToRecommendations}
-                style={{ marginTop: 8, marginBottom: 16 }}
-              >
-                <Text style={styles.homeSeeAllText}>
-                  See All
-                </Text>
-              </TouchableOpacity>
             </View>
           ) : (
             // Desktop/Tablet layout - side by side
             <View style={styles.homeSectionHeader}>
               <Text style={styles.homeSectionTitle}>
-                {isDesktop ? 'AI-Powered Recommendations for You' : 'Recommended for You'}
+                {isDesktop ? 'My Enrolled Courses' : 'Enrolled Courses'}
               </Text>
-              <TouchableOpacity onPress={handleNavigateToRecommendations}>
-                <Text style={styles.homeSeeAllText}>
-                  {isDesktop ? 'View All Recommendations' : 'See All'}
-                </Text>
-              </TouchableOpacity>
             </View>
           )}
 
-          {isLoading ? (
-            <View style={styles.homeLoadingContainer}>
-              <Ionicons name="hourglass-outline" size={isDesktop ? 40 : 30} color="#6c757d" />
-              <Text style={styles.homeLoadingText}>
-                {isDesktop ? 'Loading personalized recommendations...' : 'Loading recommendations...'}
-              </Text>
-            </View>
-          ) : recommendations.length > 0 ? (
+          {enrollments.length > 0 ? (
             isMobile ? (
               // Mobile: 2 rows layout
               <View style={styles.homeRecommendationGrid}>
-                {recommendations.map((recommendation: any) => (
+                {enrollments.filter((enrollment: any) => enrollment.course).map((enrollment: any) => (
                   <TouchableOpacity
-                    key={recommendation.course_id}
+                    key={enrollment.course_id}
                     style={[
                       styles.homeRecommendationCardMobile,
-                      hoveredCard === `rec-${recommendation.course_id}` && isWeb && {
+                      hoveredCard === `rec-${enrollment.course_id}` && isWeb && {
                         transform: [{ translateY: -4 }],
                         shadowOpacity: 0.15,
                         borderColor: '#007bff',
@@ -246,15 +244,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                       }
                     ]}
                     onPress={() => navigation.navigate('CourseDetail', { 
-                      courseId: recommendation.course_id 
+                      courseId: enrollment.course_id 
                     })}
-                    onPressIn={() => isWeb && setHoveredCard(`rec-${recommendation.course_id}`)}
+                    onPressIn={() => isWeb && setHoveredCard(`rec-${enrollment.course_id}`)}
                     onPressOut={() => isWeb && setHoveredCard(null)}
                   >
                     <View style={{ flex: 1 }}>
                       <View style={styles.homeRecommendationHeader}>
                         <Text style={styles.homeRecommendationTitle} numberOfLines={2}>
-                          {recommendation.title}
+                          {enrollment.course.title}
                         </Text>
                         <View style={styles.homeRatingContainer}>
                           <Ionicons 
@@ -263,23 +261,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                             color="#FFD700" 
                           />
                           <Text style={styles.homeRatingText}>
-                            {recommendation.rating.toFixed(1)}
+                            {enrollment.course.rating.toFixed(1)}
                           </Text>
                         </View>
                       </View>
                       <Text style={styles.homeRecommendationInstructor}>
-                        {recommendation.instructor}
+                        {enrollment.course.instructor}
                       </Text>
                       <Text style={styles.homeRecommendationReason} numberOfLines={2}>
-                        {recommendation.recommendation_reason}
+                        Enrolled on {new Date(enrollment.enrollment_date).toLocaleDateString()}
                       </Text>
                     </View>
                     <View style={styles.homeRecommendationFooter}>
                       <Text style={styles.homeConfidenceScore}>
-                        {Math.round(recommendation.confidence_score * 100)}% match
+                        {enrollment.completion_percentage.toFixed(0)}% completed
                       </Text>
                       <Text style={styles.homePriceText}>
-                        {recommendation.is_free ? 'Free' : `$${recommendation.price}`}
+                        {!enrollment.course.is_free && `$${enrollment.course.price}`}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -298,13 +296,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 style={{ 
                   flexGrow: 0,
                   ...(isWeb && { 
-                    overflowX: 'scroll' as any,
+                    overflowX: 'auto' as any,
                     overflowY: 'hidden' as any,
                     WebkitOverflowScrolling: 'touch' as any,
-                    scrollbarWidth: 'none' as any,
-                    msOverflowStyle: 'none' as any,
+                    scrollbarWidth: 'thin' as any,
+                    msOverflowStyle: 'auto' as any,
                     cursor: 'grab' as any,
-                    '&::-webkit-scrollbar': { display: 'none' } as any
                   })
                 }}
                 nestedScrollEnabled={true}
@@ -314,12 +311,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   directionalLockEnabled: true,
                 })}
               >
-                {recommendations.map((recommendation: any) => (
+                {enrollments.filter((enrollment: any) => enrollment.course).map((enrollment: any) => (
                 <TouchableOpacity
-                  key={recommendation.course_id}
+                  key={enrollment.course_id}
                   style={[
                     styles.homeRecommendationCard,
-                    hoveredCard === `rec-${recommendation.course_id}` && isWeb && {
+                    hoveredCard === `rec-${enrollment.course_id}` && isWeb && {
                       transform: [{ translateY: -4 }],
                       shadowOpacity: 0.15,
                       borderColor: '#007bff',
@@ -327,15 +324,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     }
                   ]}
                   onPress={() => navigation.navigate('CourseDetail', { 
-                    courseId: recommendation.course_id 
+                    courseId: enrollment.course_id 
                   })}
-                  onPressIn={() => isWeb && setHoveredCard(`rec-${recommendation.course_id}`)}
+                  onPressIn={() => isWeb && setHoveredCard(`rec-${enrollment.course_id}`)}
                   onPressOut={() => isWeb && setHoveredCard(null)}
                 >
                   <View style={{ flex: 1 }}>
                     <View style={styles.homeRecommendationHeader}>
                       <Text style={styles.homeRecommendationTitle} numberOfLines={2}>
-                        {recommendation.title}
+                        {enrollment.course.title}
                       </Text>
                       <View style={styles.homeRatingContainer}>
                         <Ionicons 
@@ -344,23 +341,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                           color="#FFD700" 
                         />
                         <Text style={styles.homeRatingText}>
-                          {recommendation.rating.toFixed(1)}
+                        {enrollment.course.rating.toFixed(1)}
                         </Text>
                       </View>
                     </View>
                     <Text style={styles.homeRecommendationInstructor}>
-                      {recommendation.instructor}
+                      {enrollment.course.instructor}
                     </Text>
                     <Text style={styles.homeRecommendationReason} numberOfLines={isDesktop ? 3 : 2}>
-                      {recommendation.recommendation_reason}
+                      Enrolled on {new Date(enrollment.enrollment_date).toLocaleDateString()}
                     </Text>
                   </View>
                   <View style={styles.homeRecommendationFooter}>
                     <Text style={styles.homeConfidenceScore}>
-                      {Math.round(recommendation.confidence_score * 100)}% match
+                      {enrollment.completion_percentage.toFixed(0)}% completed
                     </Text>
                     <Text style={styles.homePriceText}>
-                      {recommendation.is_free ? 'Free' : `$${recommendation.price}`}
+                      {enrollment.course.is_free ? 'Free' : `$${enrollment.course.price}`}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -371,41 +368,63 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <View style={styles.homeEmptyContainer}>
               <Ionicons 
                 name="bulb-outline" 
-                size={isDesktop ? 60 : 50} 
+                size={isDesktop ? 40 : 32} 
                 color="#6c757d" 
               />
               <Text style={styles.homeEmptyText}>
-                {isDesktop ? 'No personalized recommendations available yet' : 'No recommendations yet'}
+                {isDesktop ? 'No enrolled courses yet' : 'No enrolled courses yet'}
               </Text>
               <Text style={styles.homeEmptySubtext}>
                 {isDesktop 
-                  ? 'Start browsing courses and interacting with content to receive AI-powered recommendations tailored to your learning preferences.'
-                  : 'Browse courses to get personalized recommendations'
+                  ? 'Start exploring courses and enroll in ones that interest you to see them here.'
+                  : 'Browse courses to enroll in them'
                 }
               </Text>
             </View>
           )}
         </View>
 
-        {/* Footer Section */}
-        <View style={styles.homeFooter}>
-          <View style={styles.homeFooterContent}>
-            <Text style={styles.homeFooterText}>
-              {isDesktop 
-                ? 'Smart Course - AI-Powered Learning Platform' 
-                : 'Smart Course'
-              }
-            </Text>
-            <Text style={styles.homeFooterSubtext}>
-              {isDesktop 
-                ? 'Discover your next learning journey with personalized recommendations'
-                : 'AI-Powered Learning'
-              }
-            </Text>
+        </ScrollView>
+      </View>
+
+      {/* Fixed Footer Section */}
+      <View style={styles.homeFooter}>
+        <View style={styles.homeFooterContent}>
+          <View style={styles.homeFooterStats}>
+            <View style={styles.homeFooterStatItem}>
+              <Ionicons name="book-outline" size={isDesktop ? 24 : 20} color="#007bff" />
+              <Text style={styles.homeFooterStatNumber}>
+                {enrollments.length}
+              </Text>
+              <Text style={styles.homeFooterStatLabel}>
+                {isDesktop ? 'Enrolled Courses' : 'Courses'}
+              </Text>
+            </View>
+            
+            <View style={styles.homeFooterStatItem}>
+              <Ionicons name="trophy-outline" size={isDesktop ? 24 : 20} color="#28a745" />
+              <Text style={styles.homeFooterStatNumber}>
+                {enrollments.filter((e: any) => e.completion_percentage === 100).length}
+              </Text>
+              <Text style={styles.homeFooterStatLabel}>
+                {isDesktop ? 'Completed' : 'Done'}
+              </Text>
+            </View>
+            
+            <View style={styles.homeFooterStatItem}>
+              <Ionicons name="trending-up-outline" size={isDesktop ? 24 : 20} color="#ffc107" />
+              <Text style={styles.homeFooterStatNumber}>
+                {enrollments.length > 0 
+                  ? Math.round(enrollments.reduce((sum: number, e: any) => sum + e.completion_percentage, 0) / enrollments.length)
+                  : 0
+                }%
+              </Text>
+              <Text style={styles.homeFooterStatLabel}>
+                {isDesktop ? 'Avg Progress' : 'Progress'}
+              </Text>
+            </View>
           </View>
         </View>
-
-        </ScrollView>
       </View>
     </SafeAreaView>
   );

@@ -573,12 +573,20 @@ export const homeBaseStyles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     ...(isWeb && {
-      height: '100vh',
-      maxHeight: '100vh',
-      overflowY: 'auto',
+      height: 'calc(100vh - 140px)', // Subtract header and footer height
+      maxHeight: 'calc(100vh - 140px)',
+      overflowY: 'scroll',
       overflowX: 'hidden',
       WebkitOverflowScrolling: 'touch',
       scrollbarWidth: 'thin',
+    } as any),
+  },
+  
+  homeScrollContentStyle: {
+    flexGrow: 1,
+    paddingBottom: 140, // Space for fixed footer
+    ...(isWeb && {
+      minHeight: '100%',
     } as any),
   },
   
@@ -724,9 +732,7 @@ export const homeBaseStyles = StyleSheet.create({
   },
   
   homeRecommendationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    position: 'relative',
     marginBottom: 8,
   },
   
@@ -734,11 +740,13 @@ export const homeBaseStyles = StyleSheet.create({
     fontSize: homeResponsiveDimensions.recommendationTitleSize.mobile,
     fontWeight: 'bold',
     color: '#333',
-    flex: 1,
-    marginRight: 8,
+    paddingRight: 50, // Space for rating
   },
   
   homeRatingContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -770,7 +778,7 @@ export const homeBaseStyles = StyleSheet.create({
   },
   
   homeConfidenceScore: {
-    fontSize: 12,
+    fontSize: homeResponsiveDimensions.recommendationTextSize.mobile,
     color: '#28a745',
     fontWeight: '600',
     backgroundColor: '#d4edda',
@@ -791,7 +799,7 @@ export const homeBaseStyles = StyleSheet.create({
   },
   
   homeEmptyText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#6c757d',
     fontWeight: '600',
     marginTop: 12,
@@ -799,7 +807,7 @@ export const homeBaseStyles = StyleSheet.create({
   },
   
   homeEmptySubtext: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6c757d',
     textAlign: 'center',
   },
@@ -841,46 +849,69 @@ export const homeBaseStyles = StyleSheet.create({
   },
   
   homeFooter: {
-    marginTop: 40,
-    paddingVertical: 30,
-    paddingHorizontal: 20,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   
   homeFooterContent: {
     alignItems: 'center',
   },
   
-  homeFooterText: {
+  homeFooterStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 10,
+  },
+  
+  homeFooterStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  
+  homeFooterStatNumber: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
+    marginTop: 4,
+    marginBottom: 2,
   },
   
-  homeFooterSubtext: {
-    fontSize: 14,
+  homeFooterStatLabel: {
+    fontSize: 12,
     color: '#6c757d',
     textAlign: 'center',
   },
+  
 });
 
 // HomeScreen web-specific styles
 export const homeWebStyles = StyleSheet.create({
   homeContainer: {
-    ...(isWeb ? {
-      minHeight: '100vh' as any,
-    } : {}),
+    flex: 1,
+    backgroundColor: '#ffffff',
   },
   
   homeHeader: {
-    ...(isWeb ? {
-      position: 'sticky' as any,
-      top: 0,
-      zIndex: 1000,
-    } : {}),
+    backgroundColor: '#ffffff',
+    paddingTop: Platform.OS === 'ios' ? 0 : 20,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
   },
   
   homeHeaderContent: {
@@ -992,19 +1023,35 @@ export const homeWebStyles = StyleSheet.create({
   },
   
   homeFooter: {
-    marginTop: 50,
-    paddingVertical: 40,
-    paddingHorizontal: 24,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    marginTop: 25,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   
-  homeFooterText: {
-    fontSize: 18,
-    marginBottom: 10,
+  homeFooterStats: {
   },
   
-  homeFooterSubtext: {
-    fontSize: 16,
+  homeFooterStatNumber: {
+    fontSize: 14,
+    marginTop: 6,
   },
+  
+  homeFooterStatLabel: {
+    fontSize: 11,
+  },
+  
 });
 
 // HomeScreen desktop-specific styles
@@ -1089,19 +1136,35 @@ export const homeDesktopStyles = StyleSheet.create({
   },
   
   homeFooter: {
-    marginTop: 60,
-    paddingVertical: 50,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    marginTop: 30,
+    paddingVertical: 30,
     paddingHorizontal: 32,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   
-  homeFooterText: {
-    fontSize: 20,
-    marginBottom: 12,
+  homeFooterStats: {
   },
   
-  homeFooterSubtext: {
-    fontSize: 18,
+  homeFooterStatNumber: {
+    fontSize: 16,
+    marginTop: 8,
   },
+  
+  homeFooterStatLabel: {
+    fontSize: 12,
+  },
+  
 });
 
 // Helper function to get responsive home styles

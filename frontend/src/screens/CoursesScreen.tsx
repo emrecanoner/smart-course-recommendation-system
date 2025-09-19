@@ -51,6 +51,25 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
     return () => clearTimeout(timer);
   }, [dispatch]);
 
+  // Listen for navigation focus to refresh data
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Show loading and refresh courses and categories when screen comes into focus
+      setShowPageLoading(true);
+      dispatch(fetchCourses({}));
+      dispatch(fetchCategories());
+      
+      // Hide loading after data is fetched
+      const timer = setTimeout(() => {
+        setShowPageLoading(false);
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    });
+
+    return unsubscribe;
+  }, [navigation, dispatch]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
     if (searchQuery.trim()) {
@@ -175,7 +194,7 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
         </View>
         <View style={styles.courseRating}>
           <Ionicons name="star" size={isDesktop ? 18 : isTablet ? 16 : 14} color="#FFD700" />
-          <Text style={styles.ratingText}>{Math.round(item.rating)}</Text>
+          <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
         </View>
       </View>
 
@@ -195,7 +214,7 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
           </View>
           <View style={styles.metaItem}>
             <Ionicons name="trending-up" size={isDesktop ? 16 : isTablet ? 14 : 12} color="#666" />
-            <Text style={styles.metaText}>{Math.round(item.completion_rate)}%</Text>
+            <Text style={styles.metaText}>{item.completion_rate.toFixed(1)}%</Text>
           </View>
         </View>
         <View style={styles.priceContainer}>
