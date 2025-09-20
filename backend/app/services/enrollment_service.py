@@ -266,3 +266,96 @@ class EnrollmentService:
         self.db.commit()
         self.db.refresh(enrollment)
         return enrollment
+    
+    def complete_course(self, user_id: int, course_id: int, completion_percentage: float = 100.0) -> Optional[Enrollment]:
+        """
+        Mark a course as completed for a user.
+        
+        Args:
+            user_id: User ID
+            course_id: Course ID
+            completion_percentage: Completion percentage (default 100.0)
+            
+        Returns:
+            Optional[Enrollment]: Updated enrollment if found, None otherwise
+        """
+        enrollment = self.db.query(Enrollment).filter(
+            and_(
+                Enrollment.user_id == user_id,
+                Enrollment.course_id == course_id,
+                Enrollment.is_active == True,
+                Enrollment.deleted_at.is_(None)
+            )
+        ).first()
+        
+        if not enrollment:
+            return None
+        
+        enrollment.completion_percentage = completion_percentage
+        enrollment.is_completed = True
+        enrollment.completion_date = func.now()
+        enrollment.updated_at = func.now()
+        
+        self.db.commit()
+        self.db.refresh(enrollment)
+        return enrollment
+    
+    def update_last_access(self, user_id: int, course_id: int) -> Optional[Enrollment]:
+        """
+        Update last access time for a user's enrollment.
+        
+        Args:
+            user_id: User ID
+            course_id: Course ID
+            
+        Returns:
+            Optional[Enrollment]: Updated enrollment if found, None otherwise
+        """
+        enrollment = self.db.query(Enrollment).filter(
+            and_(
+                Enrollment.user_id == user_id,
+                Enrollment.course_id == course_id,
+                Enrollment.is_active == True,
+                Enrollment.deleted_at.is_(None)
+            )
+        ).first()
+        
+        if not enrollment:
+            return None
+        
+        enrollment.last_access = func.now()
+        enrollment.updated_at = func.now()
+        
+        self.db.commit()
+        self.db.refresh(enrollment)
+        return enrollment
+    
+    def calculate_time_spent(self, user_id: int, course_id: int) -> Optional[int]:
+        """
+        Calculate time spent on a course based on user interactions.
+        This gets the actual time spent from user interactions, not enrollment dates.
+        
+        Args:
+            user_id: User ID
+            course_id: Course ID
+            
+        Returns:
+            Optional[int]: Time spent in minutes, None if not found
+        """
+        from app.models.interaction import UserInteraction
+        
+        # Get the most recent 'complete' interaction for this user and course
+        interaction = self.db.query(UserInteraction).filter(
+            and_(
+                UserInteraction.user_id == user_id,
+                UserInteraction.course_id == course_id,
+                UserInteraction.interaction_type == 'complete'
+            )
+        ).order_by(UserInteraction.created_at.desc()).first()
+        
+        if interaction and interaction.time_spent_minutes:
+            return interaction.time_spent_minutes
+        
+        # Fallback: if no interaction time_spent_minutes, return None
+        # This means we should rely on frontend-provided time_spent_minutes
+        return None

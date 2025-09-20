@@ -1269,7 +1269,7 @@ export const coursesResponsiveDimensions = {
   },
   subtitleSize: {
     mobile: 16,
-    tablet: 13,
+    tablet: 15,
     desktop: 18,
   },
   bodyTextSize: {
@@ -1279,7 +1279,7 @@ export const coursesResponsiveDimensions = {
   },
   metaTextSize: {
     mobile: 12,
-    tablet: 10,
+    tablet: 12,
     desktop: 14,
   },
 };

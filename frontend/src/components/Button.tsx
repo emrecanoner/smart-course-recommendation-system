@@ -62,9 +62,9 @@ const Button: React.FC<ButtonProps> = ({
         };
       case 'secondary':
         return {
-          backgroundColor: disabled ? '#6c757d' : '#ef4444', // Bright red
-          shadowColor: disabled ? '#6c757d' : '#ef4444',
-          pressedColor: '#dc2626',
+          backgroundColor: disabled ? '#6c757d' : '#6b7280', // Gray for unenroll
+          shadowColor: disabled ? '#6c757d' : '#6b7280',
+          pressedColor: '#4b5563',
         };
       default: // primary
         return {

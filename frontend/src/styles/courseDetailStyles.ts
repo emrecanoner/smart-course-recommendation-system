@@ -26,12 +26,12 @@ const courseDetailResponsiveDimensions = {
   },
   bodySize: {
     mobile: 14,
-    tablet: 12,
+    tablet: 13,
     desktop: 16,
   },
   buttonHeight: {
-    mobile: 48,
-    tablet: 52,
+    mobile: 56,
+    tablet: 56,
     desktop: 56,
   },
   cardPadding: {
@@ -102,11 +102,31 @@ const courseDetailBaseStyles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: courseDetailResponsiveDimensions.sectionSpacing.mobile,
   },
+  courseDetailTitleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
   courseDetailTitle: {
     fontSize: courseDetailResponsiveDimensions.titleSize.mobile,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 10,
+    flex: 1,
+    marginRight: 12,
+  },
+  courseDetailLikeButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   courseDetailInstructorRating: {
     marginBottom: 20,
@@ -276,6 +296,72 @@ const courseDetailBaseStyles = StyleSheet.create({
     fontSize: courseDetailResponsiveDimensions.bodySize.mobile,
     fontWeight: '600',
   },
+  courseDetailActionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  courseDetailActionButton: {
+    flex: 1,
+  },
+  courseDetailUnenrollButton: {
+    marginTop: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  courseDetailUnenrollText: {
+    fontSize: courseDetailResponsiveDimensions.bodySize.mobile,
+    color: '#666',
+    textDecorationLine: 'underline',
+  },
+  ratingModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ratingModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    margin: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  ratingModalTitle: {
+    fontSize: courseDetailResponsiveDimensions.titleSize.mobile,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  ratingModalSubtitle: {
+    fontSize: courseDetailResponsiveDimensions.bodySize.mobile,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  ratingStarsContainer: {
+    flexDirection: 'row',
+    marginBottom: 24,
+  },
+  ratingStarButton: {
+    padding: 8,
+  },
+  ratingModalCloseButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  ratingModalCloseText: {
+    fontSize: courseDetailResponsiveDimensions.bodySize.mobile,
+    color: '#666',
+    textDecorationLine: 'underline',
+  },
 });
 
 // Course Detail Web Styles
@@ -306,9 +392,29 @@ const courseDetailWebStyles = StyleSheet.create({
   courseDetailImage: {
     height: courseDetailResponsiveDimensions.imageHeight.tablet,
   },
+  courseDetailTitleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
   courseDetailTitle: {
     fontSize: courseDetailResponsiveDimensions.titleSize.tablet,
-    marginBottom: 10,
+    flex: 1,
+    marginRight: 12,
+  },
+  courseDetailLikeButton: {
+    padding: 10,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   courseDetailInstructor: {
     fontSize: courseDetailResponsiveDimensions.bodySize.tablet,
@@ -348,6 +454,62 @@ const courseDetailWebStyles = StyleSheet.create({
     fontSize: courseDetailResponsiveDimensions.bodySize.tablet - 1,
     lineHeight: 20,
   },
+  courseDetailActionButtons: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  courseDetailActionButton: {
+    flex: 1,
+  },
+  courseDetailUnenrollButton: {
+    marginTop: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  courseDetailUnenrollText: {
+    fontSize: courseDetailResponsiveDimensions.bodySize.tablet,
+    color: '#666',
+    textDecorationLine: 'underline',
+  },
+  ratingModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 28,
+    margin: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  ratingModalTitle: {
+    fontSize: courseDetailResponsiveDimensions.titleSize.tablet,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  ratingModalSubtitle: {
+    fontSize: courseDetailResponsiveDimensions.bodySize.tablet,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  ratingStarsContainer: {
+    flexDirection: 'row',
+    marginBottom: 28,
+  },
+  ratingStarButton: {
+    padding: 10,
+  },
+  ratingModalCloseText: {
+    fontSize: courseDetailResponsiveDimensions.bodySize.tablet,
+    color: '#666',
+    textDecorationLine: 'underline',
+  },
 });
 
 // Course Detail Desktop Styles
@@ -365,9 +527,29 @@ const courseDetailDesktopStyles = StyleSheet.create({
   courseDetailImage: {
     height: courseDetailResponsiveDimensions.imageHeight.desktop,
   },
+  courseDetailTitleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
   courseDetailTitle: {
     fontSize: courseDetailResponsiveDimensions.titleSize.desktop,
-    marginBottom: 10,
+    flex: 1,
+    marginRight: 12,
+  },
+  courseDetailLikeButton: {
+    padding: 12,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   courseDetailInstructor: {
     fontSize: courseDetailResponsiveDimensions.bodySize.desktop,
@@ -406,6 +588,62 @@ const courseDetailDesktopStyles = StyleSheet.create({
   courseDetailSimilarCardDescription: {
     fontSize: courseDetailResponsiveDimensions.bodySize.desktop - 1,
     lineHeight: 22,
+  },
+  courseDetailActionButtons: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  courseDetailActionButton: {
+    flex: 1,
+  },
+  courseDetailUnenrollButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  courseDetailUnenrollText: {
+    fontSize: courseDetailResponsiveDimensions.bodySize.desktop,
+    color: '#666',
+    textDecorationLine: 'underline',
+  },
+  ratingModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 32,
+    margin: 28,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  ratingModalTitle: {
+    fontSize: courseDetailResponsiveDimensions.titleSize.desktop,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+  },
+  ratingModalSubtitle: {
+    fontSize: courseDetailResponsiveDimensions.bodySize.desktop,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  ratingStarsContainer: {
+    flexDirection: 'row',
+    marginBottom: 32,
+  },
+  ratingStarButton: {
+    padding: 12,
+  },
+  ratingModalCloseText: {
+    fontSize: courseDetailResponsiveDimensions.bodySize.desktop,
+    color: '#666',
+    textDecorationLine: 'underline',
   },
 });
 

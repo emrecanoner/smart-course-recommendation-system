@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Modal,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
@@ -20,6 +21,7 @@ import { getResponsiveCourseDetailStyles } from '../styles/courseDetailStyles';
 import { isWeb, isTablet, isDesktop, isMobile } from '../styles/responsiveStyles';
 import LoadingComponent from '../components/LoadingComponent';
 import Button from '../components/Button';
+import apiService from '../services/api';
 
 interface CourseDetailScreenProps {
   navigation: any;
@@ -36,7 +38,12 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
   // const { recommendations: similarCourses } = useSelector((state: RootState) => state.recommendations);
   const { isLoading: enrollmentLoading, enrollments, enrollmentStatus } = useSelector((state: RootState) => state.enrollments);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
   const [showPageLoading, setShowPageLoading] = React.useState(true);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [userRating, setUserRating] = useState(0);
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   const { courseId } = route.params;
   const styles = getResponsiveCourseDetailStyles();
@@ -45,6 +52,9 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
     dispatch(fetchCourse(courseId));
     // dispatch(fetchSimilarCourses({ courseId, limit: 3 }));
     dispatch(checkEnrollment(courseId));
+    
+    // Track course view
+    trackCourseView();
     
     // Show page loading for 1.5 seconds
     const timer = setTimeout(() => {
@@ -85,7 +95,90 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
       );
       setIsEnrolled(enrolled);
     }
+    
+    // Check if course is completed
+    const enrollment = enrollments.find(e => e.course_id === courseId && e.is_active);
+    if (enrollment) {
+      setIsCompleted(enrollment.is_completed || enrollment.completion_percentage >= 100);
+    }
   }, [enrollments, enrollmentStatus, courseId]);
+
+  // Tracking functions
+  const trackCourseView = async () => {
+    try {
+      const deviceType = isWeb ? 'web' : isTablet ? 'tablet' : 'mobile';
+      await apiService.trackCourseView(courseId, sessionId, deviceType, 'course_detail');
+    } catch (error) {
+      console.log('Error tracking course view:', error);
+    }
+  };
+
+  const handleLike = async () => {
+    try {
+      const deviceType = isWeb ? 'web' : isTablet ? 'tablet' : 'mobile';
+      
+      if (isLiked) {
+        // Unlike
+        await apiService.trackCourseUnlike(courseId, sessionId, deviceType, 'course_detail');
+        setIsLiked(false);
+        
+        if (isWeb) {
+          alert('Course removed from favorites!');
+        } else {
+          Alert.alert('Success', 'Course removed from favorites!');
+        }
+      } else {
+        // Like
+        await apiService.trackCourseLike(courseId, sessionId, deviceType, 'course_detail');
+        setIsLiked(true);
+        
+        if (isWeb) {
+          alert('Course added to favorites!');
+        } else {
+          Alert.alert('Success', 'Course added to favorites!');
+        }
+      }
+    } catch (error) {
+      console.log('Error tracking course like/unlike:', error);
+    }
+  };
+
+  const handleCompleteCourse = async () => {
+    try {
+      const deviceType = isWeb ? 'web' : isTablet ? 'tablet' : 'mobile';
+      
+      await apiService.trackCourseComplete(courseId, 100, sessionId, deviceType, 'course_detail');
+      setIsCompleted(true);
+      
+      // Show rating modal after completion
+      setShowRatingModal(true);
+      
+      if (isWeb) {
+        alert('Congratulations! Course completed! Please rate the course.');
+      } else {
+        Alert.alert('Congratulations!', 'Course completed! Please rate the course.');
+      }
+    } catch (error) {
+      console.log('Error tracking course completion:', error);
+    }
+  };
+
+  const handleRating = async (rating: number) => {
+    try {
+      const deviceType = isWeb ? 'web' : isTablet ? 'tablet' : 'mobile';
+      await apiService.trackCourseRate(courseId, rating, sessionId, deviceType, 'course_detail');
+      setUserRating(rating);
+      setShowRatingModal(false);
+      
+      if (isWeb) {
+        alert(`Thank you for rating ${rating} stars!`);
+      } else {
+        Alert.alert('Thank you!', `You rated this course ${rating} stars!`);
+      }
+    } catch (error) {
+      console.log('Error tracking course rating:', error);
+    }
+  };
 
   const handleEnroll = () => {
     if (selectedCourse) {
@@ -138,6 +231,10 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
       const result = await dispatch(createEnrollment({ course_id: courseId })).unwrap();
       setIsEnrolled(true);
       
+      // Track enrollment
+      const deviceType = isWeb ? 'web' : isTablet ? 'tablet' : 'mobile';
+      await apiService.trackCourseEnroll(courseId, sessionId, deviceType, 'course_detail');
+      
       if (isWeb) {
         alert('Successfully enrolled in the course!');
       } else {
@@ -158,6 +255,10 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
     try {
       const result = await dispatch(unenrollFromCourse(courseId)).unwrap();
       setIsEnrolled(false);
+      
+      // Track unenrollment
+      const deviceType = isWeb ? 'web' : isTablet ? 'tablet' : 'mobile';
+      await apiService.trackCourseUnenroll(courseId, sessionId, deviceType, 'course_detail');
       
       if (isWeb) {
         alert('Successfully unenrolled from the course!');
@@ -311,7 +412,19 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
 
         {/* Course Info */}
         <View style={styles.courseDetailInfo}>
-          <Text style={styles.courseDetailTitle}>{selectedCourse.title}</Text>
+          <View style={styles.courseDetailTitleContainer}>
+            <Text style={styles.courseDetailTitle}>{selectedCourse.title}</Text>
+            <TouchableOpacity
+              style={styles.courseDetailLikeButton}
+              onPress={handleLike}
+            >
+              <Ionicons 
+                name={isLiked ? "heart" : "heart-outline"} 
+                size={isDesktop ? 28 : isTablet ? 26 : 24} 
+                color={isLiked ? "#ff6b6b" : "#666"} 
+              />
+            </TouchableOpacity>
+          </View>
           
           <View style={styles.courseDetailInstructorRating}>
             <Text style={styles.courseDetailInstructor}>by {selectedCourse.instructor}</Text>
@@ -382,15 +495,83 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
 
         {/* Actions */}
         <View style={styles.courseDetailActions}>
-          <Button
-            title={isEnrolled ? 'Unenroll' : 'Enroll Now'}
-            onPress={handleEnroll}
-            variant={isEnrolled ? 'secondary' : 'primary'}
-            disabled={enrollmentLoading}
-            icon={isEnrolled ? <Ionicons name="close-circle" size={20} color="#ffffff" /> : undefined}
-          />
+          {!isEnrolled ? (
+            // Not enrolled - show enroll button
+            <Button
+              title="Enroll Now"
+              onPress={handleEnroll}
+              variant="primary"
+              disabled={enrollmentLoading}
+              icon={<Ionicons name="add-circle" size={20} color="#ffffff" />}
+            />
+          ) : isCompleted ? (
+            // Completed - show disabled completed button
+            <Button
+              title="Course Completed"
+              onPress={() => {}}
+              variant="success"
+              disabled={true}
+              icon={<Ionicons name="checkmark-circle" size={20} color="#ffffff" />}
+            />
+          ) : (
+            // Enrolled but not completed - show complete course button (like Enroll Now)
+            <View>
+              <Button
+                title="Complete Course"
+                onPress={handleCompleteCourse}
+                variant="primary"
+                disabled={enrollmentLoading}
+                icon={<Ionicons name="checkmark-circle" size={20} color="#ffffff" />}
+              />
+              <TouchableOpacity
+                style={styles.courseDetailUnenrollButton}
+                onPress={handleEnroll}
+                disabled={enrollmentLoading}
+              >
+                <Text style={styles.courseDetailUnenrollText}>Unenroll from this course</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
+
+      {/* Rating Modal */}
+      <Modal
+        visible={showRatingModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowRatingModal(false)}
+      >
+        <View style={styles.ratingModalOverlay}>
+          <View style={styles.ratingModalContent}>
+            <Text style={styles.ratingModalTitle}>Rate This Course</Text>
+            <Text style={styles.ratingModalSubtitle}>How would you rate your learning experience?</Text>
+            
+            <View style={styles.ratingStarsContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => handleRating(star)}
+                  style={styles.ratingStarButton}
+                >
+                  <Ionicons
+                    name={star <= userRating ? "star" : "star-outline"}
+                    size={isDesktop ? 40 : isTablet ? 36 : 32}
+                    color={star <= userRating ? "#FFD700" : "#DDD"}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            <TouchableOpacity
+              style={styles.ratingModalCloseButton}
+              onPress={() => setShowRatingModal(false)}
+            >
+              <Text style={styles.ratingModalCloseText}>Skip Rating</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

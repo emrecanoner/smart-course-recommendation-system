@@ -198,6 +198,87 @@ class ApiService {
     const response: AxiosResponse<{ message: string }> = await this.api.delete(`/enrollments/${courseId}`);
     return response.data;
   }
+
+  // Analytics and Interaction Tracking methods
+  async trackCourseView(courseId: number, sessionId?: string, deviceType?: string, referrer?: string): Promise<any> {
+    const response = await this.api.post('/analytics/track/course-view', null, {
+      params: { course_id: courseId, session_id: sessionId, device_type: deviceType, referrer }
+    });
+    return response.data;
+  }
+
+  async trackCourseLike(courseId: number, sessionId?: string, deviceType?: string, referrer?: string): Promise<any> {
+    const response = await this.api.post('/analytics/track/course-like', null, {
+      params: { course_id: courseId, session_id: sessionId, device_type: deviceType, referrer }
+    });
+    return response.data;
+  }
+
+  async trackCourseUnlike(courseId: number, sessionId?: string, deviceType?: string, referrer?: string): Promise<any> {
+    const response = await this.api.post('/analytics/track/course-unlike', null, {
+      params: { course_id: courseId, session_id: sessionId, device_type: deviceType, referrer }
+    });
+    return response.data;
+  }
+
+  async trackCourseEnroll(courseId: number, sessionId?: string, deviceType?: string, referrer?: string): Promise<any> {
+    const response = await this.api.post('/analytics/track/course-enroll', null, {
+      params: { course_id: courseId, session_id: sessionId, device_type: deviceType, referrer }
+    });
+    return response.data;
+  }
+
+  async trackCourseUnenroll(courseId: number, sessionId?: string, deviceType?: string, referrer?: string): Promise<any> {
+    const response = await this.api.post('/analytics/track/course-unenroll', null, {
+      params: { course_id: courseId, session_id: sessionId, device_type: deviceType, referrer }
+    });
+    return response.data;
+  }
+
+  async trackCourseComplete(courseId: number, completionPercentage: number, sessionId?: string, deviceType?: string, referrer?: string): Promise<any> {
+    const response = await this.api.post('/analytics/track/course-complete', null, {
+      params: { 
+        course_id: courseId, 
+        completion_percentage: completionPercentage,
+        session_id: sessionId,
+        device_type: deviceType,
+        referrer
+      }
+    });
+    return response.data;
+  }
+
+  async trackCourseRate(courseId: number, rating: number, sessionId?: string, deviceType?: string, referrer?: string): Promise<any> {
+    const response = await this.api.post('/analytics/track/course-rate', null, {
+      params: { course_id: courseId, rating, session_id: sessionId, device_type: deviceType, referrer }
+    });
+    return response.data;
+  }
+
+  async getUserInteractionSummary(): Promise<any> {
+    const response = await this.api.get('/analytics/user/interaction-summary');
+    return response.data;
+  }
+
+  async getUserPreferences(): Promise<any> {
+    const response = await this.api.get('/analytics/user/preferences');
+    return response.data;
+  }
+
+  async updateUserPreferences(preferences: any): Promise<any> {
+    const response = await this.api.put('/analytics/user/preferences', preferences);
+    return response.data;
+  }
+
+  async getUserLearningProfile(): Promise<any> {
+    const response = await this.api.get('/analytics/user/learning-profile');
+    return response.data;
+  }
+
+  async getUserInsights(): Promise<any> {
+    const response = await this.api.get('/analytics/user/insights');
+    return response.data;
+  }
 }
 
 // Export singleton instance

@@ -5,11 +5,29 @@ Recommendation service for AI-powered course recommendations.
 from typing import Any, Dict, List, Optional, Union
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc
+import logging
+import os
+import sys
 
 from app.models.course import Course
 from app.models.recommendation import Recommendation, RecommendationLog
 from app.models.interaction import UserInteraction
 from app.schemas.recommendation import RecommendationRequest, RecommendationResponse
+
+# Import AI recommendation engine
+try:
+    # Add AI-ML path to sys.path
+    ai_ml_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-ml', 'inference')
+    if ai_ml_path not in sys.path:
+        sys.path.append(ai_ml_path)
+    
+    from recommendation_engine import AIRecommendationEngine
+    AI_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"AI recommendation engine not available: {e}")
+    AI_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 
 class RecommendationService:
@@ -17,6 +35,16 @@ class RecommendationService:
     
     def __init__(self, db: Session):
         self.db = db
+        self.ai_engine = None
+        
+        # Initialize AI engine if available
+        if AI_AVAILABLE:
+            try:
+                self.ai_engine = AIRecommendationEngine(db)
+                logger.info("AI recommendation engine initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize AI engine: {e}")
+                self.ai_engine = None
     
     def get_recommendations(
         self, 
@@ -35,9 +63,33 @@ class RecommendationService:
         Returns:
             List[RecommendationResponse]: List of recommendations
         """
-        # For now, implement a simple content-based recommendation
-        # In the future, this will use trained ML models
+        # Use AI engine if available
+        if self.ai_engine:
+            try:
+                logger.info(f"Using AI engine for recommendations for user {user_id}")
+                return self.ai_engine.get_recommendations(user_id, limit, algorithm)
+            except Exception as e:
+                logger.error(f"AI engine failed, falling back to basic recommendations: {e}")
         
+        # Fallback to basic recommendations
+        logger.info(f"Using basic recommendations for user {user_id}")
+        return self._get_basic_recommendations(user_id, limit)
+    
+    def _get_basic_recommendations(
+        self, 
+        user_id: int, 
+        limit: int
+    ) -> List[RecommendationResponse]:
+        """
+        Get basic recommendations as fallback.
+        
+        Args:
+            user_id: User ID
+            limit: Number of recommendations to return
+            
+        Returns:
+            List[RecommendationResponse]: List of recommendations
+        """
         # Get user's interaction history
         user_interactions = self.db.query(UserInteraction).filter(
             UserInteraction.user_id == user_id
@@ -149,6 +201,32 @@ class RecommendationService:
         Returns:
             List[RecommendationResponse]: List of similar courses
         """
+        # Use AI engine if available
+        if self.ai_engine:
+            try:
+                logger.info(f"Using AI engine for similar courses for course {course_id}")
+                return self.ai_engine.get_similar_courses(course_id, limit)
+            except Exception as e:
+                logger.error(f"AI engine failed for similar courses, falling back to basic: {e}")
+        
+        # Fallback to basic similar courses
+        return self._get_basic_similar_courses(course_id, limit)
+    
+    def _get_basic_similar_courses(
+        self, 
+        course_id: int, 
+        limit: int
+    ) -> List[RecommendationResponse]:
+        """
+        Get basic similar courses as fallback.
+        
+        Args:
+            course_id: Course ID
+            limit: Number of similar courses to return
+            
+        Returns:
+            List[RecommendationResponse]: List of similar courses
+        """
         # Get the target course
         target_course = self.db.query(Course).filter(Course.id == course_id).first()
         if not target_course:
@@ -195,6 +273,31 @@ class RecommendationService:
     ) -> None:
         """
         Record user feedback for a recommendation.
+        
+        Args:
+            user_id: User ID
+            course_id: Course ID
+            feedback_type: Type of feedback
+        """
+        # Use AI engine if available
+        if self.ai_engine:
+            try:
+                self.ai_engine.record_user_feedback(user_id, course_id, feedback_type)
+                return
+            except Exception as e:
+                logger.error(f"AI engine failed to record feedback, using basic method: {e}")
+        
+        # Fallback to basic feedback recording
+        self._record_basic_feedback(user_id, course_id, feedback_type)
+    
+    def _record_basic_feedback(
+        self, 
+        user_id: int, 
+        course_id: int, 
+        feedback_type: str
+    ) -> None:
+        """
+        Record user feedback using basic method.
         
         Args:
             user_id: User ID
