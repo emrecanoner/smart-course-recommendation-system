@@ -4,7 +4,7 @@ Recommendation service for AI-powered course recommendations.
 
 from typing import Any, Dict, List, Optional, Union
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc
+from sqlalchemy import and_, or_, desc, func
 import logging
 import os
 import sys
@@ -28,6 +28,7 @@ except ImportError as e:
     AI_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class RecommendationService:
@@ -41,7 +42,7 @@ class RecommendationService:
         if AI_AVAILABLE:
             try:
                 self.ai_engine = AIRecommendationEngine(db)
-                logger.info("AI recommendation engine initialized successfully")
+                # logger.info("AI recommendation engine initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize AI engine: {e}")
                 self.ai_engine = None
@@ -147,59 +148,40 @@ class RecommendationService:
         # Use AI engine if available
         if self.ai_engine:
             try:
-                logger.info(f"Using AI engine for recommendations for user {user_id}")
+                # logger.info(f"Using AI engine for recommendations for user {user_id}")
                 # Get AI recommendations first
                 ai_recommendations = self.ai_engine.get_recommendations(
                     user_id=user_id,
                     limit=request.limit * 2,  # Get more to filter
-                    algorithm=request.algorithm
+                    algorithm=request.algorithm,
+                    difficulty_level=request.difficulty_level,
+                    categories=[request.category] if request.category else None,
+                    max_duration_hours=request.max_duration_hours,
+                    content_type=request.content_type
                 )
                 
-                # Apply additional filters to AI recommendations
-                filtered_recommendations = []
-                for rec in ai_recommendations:
-                    # Get course details to check filters
-                    course = self.db.query(Course).filter(Course.id == rec.course_id).first()
-                    if not course:
-                        continue
-                    
-                    # Apply filters
-                    if request.categories and course.category and course.category.name not in request.categories:
-                        continue
-                    if request.difficulty_level and course.difficulty_level != request.difficulty_level:
-                        continue
-                    if request.max_duration_hours and course.duration_hours and course.duration_hours > request.max_duration_hours:
-                        continue
-                    if request.content_type and course.content_type != request.content_type:
-                        continue
-                    
-                    filtered_recommendations.append(rec)
-                    
-                    # Stop when we have enough recommendations
-                    if len(filtered_recommendations) >= request.limit:
-                        break
-                
-                return filtered_recommendations[:request.limit]
+                # AI engine already applies filters, so return directly
+                return ai_recommendations[:request.limit]
                 
             except Exception as e:
                 logger.error(f"AI engine failed, falling back to simple recommendations: {e}")
         
         # Fallback to simple query-based recommendations
-        logger.info(f"Using simple recommendations for user {user_id}")
+        # logger.info(f"Using simple recommendations for user {user_id}")
         query = self.db.query(Course).filter(Course.is_active == True)
         
-        if request.categories:
+        if request.category:
             from app.models.course import Category
-            query = query.join(Category).filter(Category.name.in_(request.categories))
+            query = query.join(Category).filter(func.lower(Category.name) == func.lower(request.category))
         
         if request.difficulty_level:
-            query = query.filter(Course.difficulty_level == request.difficulty_level)
+            query = query.filter(func.lower(Course.difficulty_level) == func.lower(request.difficulty_level))
         
         if request.max_duration_hours:
             query = query.filter(Course.duration_hours <= request.max_duration_hours)
         
         if request.content_type:
-            query = query.filter(Course.content_type == request.content_type)
+            query = query.filter(func.lower(Course.content_type) == func.lower(request.content_type))
         
         # Get recommendations
         courses = query.order_by(desc(Course.rating)).limit(request.limit).all()

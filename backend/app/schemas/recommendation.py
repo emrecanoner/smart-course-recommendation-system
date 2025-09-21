@@ -10,7 +10,7 @@ class RecommendationRequest(BaseModel):
     """Schema for recommendation request."""
     limit: int = 10
     algorithm: str = "hybrid"
-    categories: Optional[List[str]] = None
+    category: Optional[str] = None
     difficulty_level: Optional[str] = None
     max_duration_hours: Optional[int] = None
     content_type: Optional[str] = None

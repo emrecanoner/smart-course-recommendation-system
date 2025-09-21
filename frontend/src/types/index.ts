@@ -74,7 +74,7 @@ export interface Course {
 export interface RecommendationRequest {
   limit?: number;
   algorithm?: string;
-  categories?: string[];
+  category?: string;
   difficulty_level?: string;
   max_duration_hours?: number;
   content_type?: string;

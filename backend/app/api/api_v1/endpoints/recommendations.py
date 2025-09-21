@@ -52,6 +52,39 @@ def get_recommendations(
         )
 
 
+@router.post("/", response_model=List[RecommendationResponse])
+def generate_recommendations(
+    *,
+    request: RecommendationRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(security.get_current_user),
+) -> Any:
+    """
+    Generate personalized course recommendations based on specific criteria.
+    
+    Args:
+        request: Recommendation request parameters
+        db: Database session
+        current_user: Current authenticated user
+        
+    Returns:
+        List[RecommendationResponse]: List of recommended courses
+    """
+    recommendation_service = RecommendationService(db)
+    
+    try:
+        recommendations = recommendation_service.generate_recommendations(
+            user_id=current_user.id,
+            request=request
+        )
+        return recommendations
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate recommendations: {str(e)}"
+        )
+
+
 @router.get("/data-requirements")
 def get_data_requirements(
     *,

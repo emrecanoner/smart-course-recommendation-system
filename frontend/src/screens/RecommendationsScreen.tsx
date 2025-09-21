@@ -168,7 +168,7 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
       request.difficulty_level = selectedFilters.difficulty;
     }
     if (selectedFilters.category && selectedFilters.category !== 'All') {
-      request.categories = [selectedFilters.category];
+      request.category = selectedFilters.category;
     }
     if (selectedFilters.maxDuration) {
       request.max_duration_hours = parseInt(selectedFilters.maxDuration);
@@ -177,6 +177,8 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
       request.content_type = selectedFilters.contentType;
     }
 
+    // console.log('DEBUG: Final request object:', request);
+    
     // Show minimum loading for 2 seconds
     setShowMinLoading(true);
     dispatch(generateRecommendations(request));
