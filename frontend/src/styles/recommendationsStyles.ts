@@ -146,6 +146,7 @@ const recommendationsBaseStyles = StyleSheet.create({
     paddingVertical: 15,
   },
   recommendationsSection: {
+    flex: 1,
     marginTop: 10,
     paddingHorizontal: 20,
     paddingVertical: 15,
@@ -539,6 +540,7 @@ const recommendationsWebStyles = StyleSheet.create({
     paddingVertical: 15,
   },
   recommendationsSection: {
+    flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 15,
   },
@@ -657,6 +659,7 @@ const recommendationsDesktopStyles = StyleSheet.create({
     paddingVertical: 15,
   },
   recommendationsSection: {
+    flex: 1,
     paddingHorizontal: 32,
     paddingVertical: 15,
   },

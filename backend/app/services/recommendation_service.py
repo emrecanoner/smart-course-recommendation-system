@@ -144,7 +144,48 @@ class RecommendationService:
         Returns:
             List[RecommendationResponse]: List of recommendations
         """
-        # Build query based on request parameters
+        # Use AI engine if available
+        if self.ai_engine:
+            try:
+                logger.info(f"Using AI engine for recommendations for user {user_id}")
+                # Get AI recommendations first
+                ai_recommendations = self.ai_engine.get_recommendations(
+                    user_id=user_id,
+                    limit=request.limit * 2,  # Get more to filter
+                    algorithm=request.algorithm
+                )
+                
+                # Apply additional filters to AI recommendations
+                filtered_recommendations = []
+                for rec in ai_recommendations:
+                    # Get course details to check filters
+                    course = self.db.query(Course).filter(Course.id == rec.course_id).first()
+                    if not course:
+                        continue
+                    
+                    # Apply filters
+                    if request.categories and course.category and course.category.name not in request.categories:
+                        continue
+                    if request.difficulty_level and course.difficulty_level != request.difficulty_level:
+                        continue
+                    if request.max_duration_hours and course.duration_hours and course.duration_hours > request.max_duration_hours:
+                        continue
+                    if request.content_type and course.content_type != request.content_type:
+                        continue
+                    
+                    filtered_recommendations.append(rec)
+                    
+                    # Stop when we have enough recommendations
+                    if len(filtered_recommendations) >= request.limit:
+                        break
+                
+                return filtered_recommendations[:request.limit]
+                
+            except Exception as e:
+                logger.error(f"AI engine failed, falling back to simple recommendations: {e}")
+        
+        # Fallback to simple query-based recommendations
+        logger.info(f"Using simple recommendations for user {user_id}")
         query = self.db.query(Course).filter(Course.is_active == True)
         
         if request.categories:

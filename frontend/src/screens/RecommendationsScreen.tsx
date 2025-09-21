@@ -63,6 +63,7 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
     };
   } | null>(null);
   const [loadingRequirements, setLoadingRequirements] = useState(true);
+  const [showMinLoading, setShowMinLoading] = useState(false);
   const [showPageLoading, setShowPageLoading] = useState(true);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   
@@ -166,7 +167,7 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
     if (selectedFilters.difficulty) {
       request.difficulty_level = selectedFilters.difficulty;
     }
-    if (selectedFilters.category) {
+    if (selectedFilters.category && selectedFilters.category !== 'All') {
       request.categories = [selectedFilters.category];
     }
     if (selectedFilters.maxDuration) {
@@ -176,7 +177,14 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
       request.content_type = selectedFilters.contentType;
     }
 
+    // Show minimum loading for 2 seconds
+    setShowMinLoading(true);
     dispatch(generateRecommendations(request));
+    
+    // Hide minimum loading after 2 seconds
+    setTimeout(() => {
+      setShowMinLoading(false);
+    }, 2000);
   };
 
   const handleFeedback = async (courseId: number, feedbackType: 'like' | 'dislike') => {
@@ -284,7 +292,11 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
         styles.algorithmCard,
         selectedAlgorithm === item.id && styles.selectedAlgorithmCard,
       ]}
-      onPress={() => setSelectedAlgorithm(item.id)}
+      onPress={() => {
+        setSelectedAlgorithm(item.id);
+        // Clear recommendations when algorithm changes
+        dispatch(clearRecommendations());
+      }}
     >
       <Text style={[
         styles.algorithmName,
@@ -339,8 +351,7 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
         {/* Data Requirements Warning */}
         {loadingRequirements ? (
           <View style={styles.loadingContainer}>
-            <LoadingComponent visible={true} />
-            <Text style={styles.loadingText}>Checking your data for AI recommendations...</Text>
+            <LoadingComponent visible={true} overlayColor="transparent" />
           </View>
         ) : dataRequirements && !dataRequirements.has_sufficient_data ? (
           <View style={styles.warningContainer}>
@@ -488,10 +499,9 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
             </Text>
           </View>
 
-          {isLoading && recommendations.length === 0 ? (
+          {(isLoading || showMinLoading) && recommendations.length === 0 ? (
             <View style={styles.loadingContainer}>
-              <LoadingComponent visible={true} />
-              <Text style={styles.loadingText}>AI is analyzing your preferences...</Text>
+              <LoadingComponent visible={true} overlayColor="transparent" />
             </View>
           ) : error ? (
             <View style={styles.errorContainer}>
