@@ -427,6 +427,7 @@ class InteractionTrackingService:
             'total_interactions': len(interactions),
             'interaction_types': {},
             'recent_interactions': [],
+            'interactions': [],  # All interactions for like status checking
             'most_viewed_courses': [],
             'completion_rate': 0.0,
             'average_rating_given': 0.0
@@ -435,11 +436,18 @@ class InteractionTrackingService:
         if not interactions:
             return summary
         
-        # Count interaction types
+        # Count interaction types and add all interactions
         for interaction in interactions:
             interaction_type = interaction.interaction_type
             summary['interaction_types'][interaction_type] = \
                 summary['interaction_types'].get(interaction_type, 0) + 1
+            
+            # Add to interactions array for like status checking
+            summary['interactions'].append({
+                'course_id': interaction.course_id,
+                'interaction_type': interaction.interaction_type,
+                'created_at': interaction.created_at.isoformat()
+            })
         
         # Get recent interactions
         recent_interactions = self.db.query(UserInteraction).filter(

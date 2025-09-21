@@ -12,10 +12,10 @@ const initialState: RecommendationState = {
 // Async thunks
 export const fetchRecommendations = createAsyncThunk(
   'recommendations/fetchRecommendations',
-  async (params?: {
+  async (params: {
     limit?: number;
     algorithm?: string;
-  }, { rejectWithValue }) => {
+  } = {}, { rejectWithValue }) => {
     try {
       const recommendations = await apiService.getRecommendations(params);
       return recommendations;

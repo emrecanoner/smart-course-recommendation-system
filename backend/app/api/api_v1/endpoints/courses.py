@@ -63,33 +63,32 @@ def read_courses(
     )
 
 
-@router.get("/{course_id}", response_model=CourseResponse)
-def read_course(
-    *,
+@router.get("/difficulty-levels")
+def get_difficulty_levels(
     db: Session = Depends(get_db),
-    course_id: int,
 ) -> Any:
     """
-    Get course by ID.
+    Get all available difficulty levels from courses.
     
     Args:
         db: Database session
-        course_id: Course ID
         
     Returns:
-        CourseResponse: Course information
-        
-    Raises:
-        HTTPException: If course not found
+        List[str]: List of unique difficulty levels
     """
-    course_service = CourseService(db)
-    course = course_service.get(id=course_id)
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="The course with this ID does not exist in the system",
-        )
-    return course
+    from app.models.course import Course
+    
+    # Get unique difficulty levels from courses
+    difficulty_levels = db.query(Course.difficulty_level).filter(
+        Course.difficulty_level.isnot(None),
+        Course.is_active == True
+    ).distinct().all()
+    
+    # Extract the values and sort them
+    levels = [level[0] for level in difficulty_levels if level[0]]
+    levels.sort()
+    
+    return levels
 
 
 @router.get("/categories/", response_model=List[CategoryResponse])
@@ -170,4 +169,33 @@ def update_course(
         )
     
     course = course_service.update(db_obj=course, obj_in=course_in)
+    return course
+
+
+@router.get("/{course_id}", response_model=CourseResponse)
+def read_course(
+    *,
+    db: Session = Depends(get_db),
+    course_id: int,
+) -> Any:
+    """
+    Get course by ID.
+    
+    Args:
+        db: Database session
+        course_id: Course ID
+        
+    Returns:
+        CourseResponse: Course information
+        
+    Raises:
+        HTTPException: If course not found
+    """
+    course_service = CourseService(db)
+    course = course_service.get(id=course_id)
+    if not course:
+        raise HTTPException(
+            status_code=404,
+            detail="The course with this ID does not exist in the system",
+        )
     return course

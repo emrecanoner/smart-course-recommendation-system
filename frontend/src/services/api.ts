@@ -155,6 +155,29 @@ class ApiService {
     return response.data;
   }
 
+  async getDataRequirements(): Promise<{
+    has_sufficient_data: boolean;
+    interaction_count: number;
+    enrollment_count: number;
+    min_interactions_required: number;
+    min_enrollments_required: number;
+    interaction_progress: number;
+    enrollment_progress: number;
+    recommendations: {
+      interactions_needed: number;
+      enrollments_needed: number;
+      suggestions: string[];
+    };
+  }> {
+    const response: AxiosResponse = await this.api.get('/recommendations/data-requirements');
+    return response.data;
+  }
+
+  async getDifficultyLevels(): Promise<string[]> {
+    const response: AxiosResponse<string[]> = await this.api.get('/courses/difficulty-levels');
+    return response.data;
+  }
+
   // Health check
   async healthCheck(): Promise<{ status: string }> {
     const response: AxiosResponse<{ status: string }> = await this.api.get('/health');

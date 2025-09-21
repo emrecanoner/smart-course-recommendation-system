@@ -20,9 +20,16 @@ app = FastAPI(
 # Set up CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8081", 
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8081",
+        "http://localhost:19006",  # Expo web
+        "http://127.0.0.1:19006",  # Expo web
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

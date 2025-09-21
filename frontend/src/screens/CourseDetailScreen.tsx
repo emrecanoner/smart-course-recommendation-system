@@ -28,6 +28,7 @@ interface CourseDetailScreenProps {
   route: {
     params: {
       courseId: number;
+      referrer?: string;
     };
   };
 }
@@ -45,7 +46,7 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
   const [userRating, setUserRating] = useState(0);
   const [showRatingModal, setShowRatingModal] = useState(false);
 
-  const { courseId } = route.params;
+  const { courseId, referrer = 'course_detail' } = route.params;
   const styles = getResponsiveCourseDetailStyles();
 
   useEffect(() => {
@@ -55,6 +56,9 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
     
     // Track course view
     trackCourseView();
+    
+    // Check if course is liked
+    checkLikeStatus();
     
     // Show page loading for 1.5 seconds
     const timer = setTimeout(() => {
@@ -69,15 +73,14 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
     const unsubscribe = navigation.addListener('focus', () => {
       // Show loading and refresh course details and enrollment status when screen comes into focus
       setShowPageLoading(true);
-      dispatch(fetchCourse(courseId));
+      dispatch(fetchCourse(courseId)).finally(() => {
+        // Hide loading after course data is fetched
+        setTimeout(() => {
+          setShowPageLoading(false);
+        }, 500);
+      });
       dispatch(checkEnrollment(courseId));
-      
-      // Hide loading after data is fetched
-      const timer = setTimeout(() => {
-        setShowPageLoading(false);
-      }, 1500);
-      
-      return () => clearTimeout(timer);
+      // Don't check like status on focus to avoid overriding user actions
     });
 
     return unsubscribe;
@@ -107,9 +110,38 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
   const trackCourseView = async () => {
     try {
       const deviceType = isWeb ? 'web' : isTablet ? 'tablet' : 'mobile';
-      await apiService.trackCourseView(courseId, sessionId, deviceType, 'course_detail');
+      await apiService.trackCourseView(courseId, sessionId, deviceType, referrer);
     } catch (error) {
-      console.log('Error tracking course view:', error);
+      // Error tracking course view
+    }
+  };
+
+  const checkLikeStatus = async () => {
+    try {
+      const response = await apiService.getUserInteractionSummary();
+      const summary = response.summary;
+      if (summary && summary.interactions && Array.isArray(summary.interactions)) {
+        // Find all like/unlike interactions for this course
+        const courseInteractions = summary.interactions.filter(
+          (interaction: any) => interaction.course_id === courseId && 
+          (interaction.interaction_type === 'like' || interaction.interaction_type === 'unlike')
+        );
+        
+        if (courseInteractions.length > 0) {
+          // Sort by created_at to get the most recent interaction
+          courseInteractions.sort((a: any, b: any) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+          
+          // Check the most recent interaction
+          const latestInteraction = courseInteractions[0];
+          setIsLiked(latestInteraction.interaction_type === 'like');
+        } else {
+          setIsLiked(false);
+        }
+      }
+    } catch (error) {
+      // Don't change state on error - keep current like status
     }
   };
 
@@ -431,7 +463,7 @@ const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ navigation, rou
             <View style={styles.courseDetailRating}>
               {renderStars(selectedCourse.rating)}
               <Text style={styles.courseDetailRatingText}>
-                {(selectedCourse.rating).toFixed(1)} ({selectedCourse.rating_count} reviews)
+                {(selectedCourse.rating).toFixed(2)} ({selectedCourse.rating_count} reviews)
               </Text>
             </View>
           </View>

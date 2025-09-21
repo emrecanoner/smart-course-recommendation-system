@@ -75,7 +75,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const handleNavigateToEnrollments = () => {
-    navigation.navigate('Courses');
+    navigation.navigate('Recommendations');
   };
 
   const handleNavigateToProfile = () => {
@@ -244,7 +244,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                       }
                     ]}
                     onPress={() => navigation.navigate('CourseDetail', { 
-                      courseId: enrollment.course_id 
+                      courseId: enrollment.course_id,
+                      referrer: 'home'
                     })}
                     onPressIn={() => isWeb && setHoveredCard(`rec-${enrollment.course_id}`)}
                     onPressOut={() => isWeb && setHoveredCard(null)}
@@ -324,7 +325,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     }
                   ]}
                   onPress={() => navigation.navigate('CourseDetail', { 
-                    courseId: enrollment.course_id 
+                    courseId: enrollment.course_id,
+                    referrer: 'home'
                   })}
                   onPressIn={() => isWeb && setHoveredCard(`rec-${enrollment.course_id}`)}
                   onPressOut={() => isWeb && setHoveredCard(null)}

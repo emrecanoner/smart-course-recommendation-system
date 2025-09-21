@@ -52,6 +52,72 @@ def get_recommendations(
         )
 
 
+@router.get("/data-requirements")
+def get_data_requirements(
+    *,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(security.get_current_user),
+) -> Any:
+    """
+    Check if user has sufficient data for AI recommendations.
+    
+    Args:
+        db: Database session
+        current_user: Current authenticated user
+        
+    Returns:
+        dict: Data requirements status and recommendations
+    """
+    from app.models.interaction import UserInteraction
+    from app.models.enrollment import Enrollment
+    
+    # Count user interactions
+    interaction_count = db.query(UserInteraction).filter(
+        UserInteraction.user_id == current_user.id
+    ).count()
+    
+    # Count user enrollments
+    enrollment_count = db.query(Enrollment).filter(
+        Enrollment.user_id == current_user.id,
+        Enrollment.deleted_at.is_(None)
+    ).count()
+    
+    # Define requirements
+    min_interactions = 5
+    min_enrollments = 2
+    
+    # Check if user has sufficient data
+    has_sufficient_interactions = interaction_count >= min_interactions
+    has_sufficient_enrollments = enrollment_count >= min_enrollments
+    has_sufficient_data = has_sufficient_interactions and has_sufficient_enrollments
+    
+    # Calculate progress
+    interaction_progress = min(100, (interaction_count / min_interactions) * 100)
+    enrollment_progress = min(100, (enrollment_count / min_enrollments) * 100)
+    
+    return {
+        "has_sufficient_data": has_sufficient_data,
+        "interaction_count": interaction_count,
+        "enrollment_count": enrollment_count,
+        "min_interactions_required": min_interactions,
+        "min_enrollments_required": min_enrollments,
+        "interaction_progress": round(interaction_progress, 1),
+        "enrollment_progress": round(enrollment_progress, 1),
+        "recommendations": {
+            "interactions_needed": max(0, min_interactions - interaction_count),
+            "enrollments_needed": max(0, min_enrollments - enrollment_count),
+            "suggestions": [
+                "Browse and view more courses to improve recommendations",
+                "Enroll in courses that interest you",
+                "Rate courses you've completed",
+                "Like courses you find helpful"
+            ] if not has_sufficient_data else [
+                "Great! You have enough data for personalized AI recommendations"
+            ]
+        }
+    }
+
+
 @router.post("/", response_model=List[RecommendationResponse])
 def create_recommendations(
     *,

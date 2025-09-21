@@ -1263,9 +1263,9 @@ export const coursesResponsiveDimensions = {
     desktop: 20,
   },
   titleSize: {
-    mobile: 32,
-    tablet: 27,
-    desktop: 36,
+    mobile: 30,
+    tablet: 25,
+    desktop: 30,
   },
   subtitleSize: {
     mobile: 16,
@@ -1312,6 +1312,8 @@ export const coursesBaseStyles = StyleSheet.create({
     paddingBottom: 20,
     paddingHorizontal: 20,
     backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

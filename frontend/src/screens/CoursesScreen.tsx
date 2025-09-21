@@ -122,7 +122,7 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
   };
 
   const handleCoursePress = (course: Course) => {
-    navigation.navigate('CourseDetail', { courseId: course.id });
+    navigation.navigate('CourseDetail', { courseId: course.id, referrer: 'courses' });
   };
 
   const formatSkills = (skills: string | undefined): string => {
@@ -194,7 +194,7 @@ const CoursesScreen: React.FC<CoursesScreenProps> = ({ navigation }) => {
         </View>
         <View style={styles.courseRating}>
           <Ionicons name="star" size={isDesktop ? 18 : isTablet ? 16 : 14} color="#FFD700" />
-          <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+          <Text style={styles.ratingText}>{item.rating.toFixed(2)}</Text>
         </View>
       </View>
 

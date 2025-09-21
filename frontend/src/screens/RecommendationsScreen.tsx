@@ -9,6 +9,7 @@ import {
   FlatList,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
@@ -18,9 +19,18 @@ import {
   submitFeedback,
   clearRecommendations 
 } from '../store/slices/recommendationSlice';
+import { fetchCategories } from '../store/slices/courseSlice';
 import { Recommendation, RecommendationRequest } from '../types';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import LoadingComponent from '../components/LoadingComponent';
+import apiService from '../services/api';
+import { 
+  getResponsiveRecommendationsStyles, 
+  isWeb, 
+  isTablet, 
+  isDesktop, 
+  isMobile 
+} from '../styles/recommendationsStyles';
 
 interface RecommendationsScreenProps {
   navigation: any;
@@ -29,6 +39,7 @@ interface RecommendationsScreenProps {
 const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { recommendations, isLoading, error } = useSelector((state: RootState) => state.recommendations);
+  const { categories } = useSelector((state: RootState) => state.courses);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('hybrid');
   const [selectedFilters, setSelectedFilters] = useState({
@@ -37,6 +48,25 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
     maxDuration: '',
     contentType: '',
   });
+  const [dataRequirements, setDataRequirements] = useState<{
+    has_sufficient_data: boolean;
+    interaction_count: number;
+    enrollment_count: number;
+    min_interactions_required: number;
+    min_enrollments_required: number;
+    interaction_progress: number;
+    enrollment_progress: number;
+    recommendations: {
+      interactions_needed: number;
+      enrollments_needed: number;
+      suggestions: string[];
+    };
+  } | null>(null);
+  const [loadingRequirements, setLoadingRequirements] = useState(true);
+  const [showPageLoading, setShowPageLoading] = useState(true);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  
+  const styles = getResponsiveRecommendationsStyles();
 
   const algorithms = [
     { id: 'hybrid', name: 'Hybrid AI', description: 'Best overall recommendations' },
@@ -45,13 +75,72 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
     { id: 'popularity', name: 'Popularity', description: 'Trending courses' },
   ];
 
-  const difficultyLevels = ['Beginner', 'Intermediate', 'Advanced'];
-  const categories = ['Programming', 'Design', 'Business', 'Marketing', 'Data Science'];
-  const contentTypes = ['Video', 'Interactive', 'Text', 'Mixed'];
+  const [difficultyLevels, setDifficultyLevels] = useState<string[]>([]);
+  const categoryNames = ['All', ...categories.map(cat => cat.name)];
 
   useEffect(() => {
-    dispatch(fetchRecommendations({ limit: 20 }));
+    loadDataRequirements();
+    dispatch(fetchCategories());
+    loadDifficultyLevels();
+    
+    // Show page loading for 1.5 seconds
+    const timer = setTimeout(() => {
+      setShowPageLoading(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
   }, [dispatch]);
+
+  // Listen for navigation focus to refresh data requirements
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadDataRequirements();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const loadDataRequirements = async () => {
+    try {
+      setLoadingRequirements(true);
+      const requirements = await apiService.getDataRequirements();
+      setDataRequirements(requirements);
+      
+      // Don't auto-fetch recommendations, let user choose algorithm and filters first
+    } catch (error) {
+      console.error('Error loading data requirements:', error);
+    } finally {
+      setLoadingRequirements(false);
+    }
+  };
+
+  const loadDifficultyLevels = async () => {
+    try {
+      const levels = await apiService.getDifficultyLevels();
+      // Capitalize first letter of each difficulty level
+      const capitalizedLevels = levels.map(level => 
+        level.charAt(0).toUpperCase() + level.slice(1).toLowerCase()
+      );
+      setDifficultyLevels(capitalizedLevels);
+    } catch (error) {
+      console.error('Error loading difficulty levels:', error);
+      // Fallback to default levels if API fails
+      setDifficultyLevels(['Beginner', 'Intermediate', 'Advanced']);
+    }
+  };
+
+  const getRecommendationTitle = () => {
+    if (selectedAlgorithm === 'hybrid') {
+      return 'AI-Powered Recommendations';
+    } else if (selectedAlgorithm === 'collaborative') {
+      return 'Based on Similar Learners';
+    } else if (selectedAlgorithm === 'content') {
+      return 'Content-Based Recommendations';
+    } else if (selectedAlgorithm === 'popularity') {
+      return 'Popular & Trending Courses';
+    }
+    return 'Recommended for You';
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -60,6 +149,15 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
   };
 
   const handleGenerateRecommendations = () => {
+    if (!dataRequirements?.has_sufficient_data) {
+      Alert.alert(
+        'Insufficient Data',
+        'You need more course interactions to get personalized AI recommendations. Please browse and enroll in more courses first.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     const request: RecommendationRequest = {
       limit: 20,
       algorithm: selectedAlgorithm,
@@ -81,26 +179,46 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
     dispatch(generateRecommendations(request));
   };
 
-  const handleFeedback = (courseId: number, feedbackType: 'like' | 'dislike') => {
-    dispatch(submitFeedback({ courseId, feedbackType }));
-    Alert.alert(
-      'Thank you!',
-      `Your ${feedbackType} feedback has been recorded and will help improve future recommendations.`
-    );
+  const handleFeedback = async (courseId: number, feedbackType: 'like' | 'dislike') => {
+    try {
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const deviceType = Platform.OS === 'web' ? 'web' : Platform.OS;
+      const referrer = 'ai_recommendations';
+      
+      if (feedbackType === 'like') {
+        await apiService.trackCourseLike(courseId, sessionId, deviceType, referrer);
+        Alert.alert('Thank you!', 'Course added to favorites! This will help improve future recommendations.');
+      } else {
+        await apiService.trackCourseUnlike(courseId, sessionId, deviceType, referrer);
+        Alert.alert('Thank you!', 'Course removed from favorites. This will help improve future recommendations.');
+      }
+    } catch (error) {
+      console.error('Error tracking feedback:', error);
+      Alert.alert('Error', 'Failed to record feedback. Please try again.');
+    }
   };
 
   const handleCoursePress = (courseId: number) => {
-    navigation.navigate('CourseDetail', { courseId });
+    navigation.navigate('CourseDetail', { courseId, referrer: 'ai_recommendations' });
   };
 
   const renderRecommendationItem = ({ item, index }: { item: Recommendation; index: number }) => (
     <TouchableOpacity
-      style={styles.recommendationCard}
+      style={[
+        styles.recommendationCard,
+        hoveredCard === item.course_id.toString() && styles.recommendationCardHovered
+      ]}
       onPress={() => handleCoursePress(item.course_id)}
+      onPressIn={() => setHoveredCard(item.course_id.toString())}
+      onPressOut={() => setHoveredCard(null)}
     >
       <View style={styles.recommendationHeader}>
         <View style={styles.rankBadge}>
           <Text style={styles.rankText}>#{index + 1}</Text>
+        </View>
+        <View style={styles.aiBadge}>
+          <Ionicons name="bulb" size={12} color="white" />
+          <Text style={styles.aiBadgeText}>AI</Text>
         </View>
         <View style={styles.confidenceBadge}>
           <Ionicons name="trending-up" size={12} color="white" />
@@ -119,7 +237,7 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
         <View style={styles.recommendationMeta}>
           <View style={styles.metaItem}>
             <Ionicons name="star" size={14} color="#FFD700" />
-            <Text style={styles.metaText}>{item.rating.toFixed(1)}</Text>
+            <Text style={styles.metaText}>{item.rating.toFixed(2)}</Text>
           </View>
           <View style={styles.metaItem}>
             <Ionicons name="time" size={14} color="#666" />
@@ -183,33 +301,101 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
     </TouchableOpacity>
   );
 
+  // Show loading screen
+  if (showPageLoading) {
+    return <LoadingComponent />;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.header}
+      <ScrollView 
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        {...(isWeb && {
+          scrollEventThrottle: 16,
+          nestedScrollEnabled: true,
+        })}
       >
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>AI Recommendations</Text>
-          <TouchableOpacity
-            style={styles.refreshButton}
-            onPress={handleGenerateRecommendations}
-          >
-            <Ionicons name="refresh" size={24} color="white" />
-          </TouchableOpacity>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons 
+                name="arrow-back" 
+                size={isDesktop ? 28 : isTablet ? 26 : 24} 
+                color="#666" 
+              />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
+              AI Courses
+            </Text>
+            <View style={styles.headerPlaceholder} />
+          </View>
         </View>
-      </LinearGradient>
+        {/* Data Requirements Warning */}
+        {loadingRequirements ? (
+          <View style={styles.loadingContainer}>
+            <LoadingComponent visible={true} />
+            <Text style={styles.loadingText}>Checking your data for AI recommendations...</Text>
+          </View>
+        ) : dataRequirements && !dataRequirements.has_sufficient_data ? (
+          <View style={styles.warningContainer}>
+            <View style={styles.warningHeader}>
+              <Ionicons name="information-circle" size={24} color="#ff9800" />
+              <Text style={styles.warningTitle}>More Data Needed for AI Recommendations</Text>
+            </View>
+            
+            <View style={styles.progressContainer}>
+              <View style={styles.progressItem}>
+                <Text style={styles.progressLabel}>Course Interactions</Text>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${dataRequirements.interaction_progress}%` }]} />
+                </View>
+                <Text style={styles.progressText}>
+                  {dataRequirements.interaction_count} / {dataRequirements.min_interactions_required}
+                </Text>
+              </View>
+              
+              <View style={styles.progressItem}>
+                <Text style={styles.progressLabel}>Course Enrollments</Text>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${dataRequirements.enrollment_progress}%` }]} />
+                </View>
+                <Text style={styles.progressText}>
+                  {dataRequirements.enrollment_count} / {dataRequirements.min_enrollments_required}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.suggestionsContainer}>
+              <Text style={styles.suggestionsTitle}>To get personalized AI recommendations:</Text>
+              {dataRequirements.recommendations.suggestions.map((suggestion, index) => (
+                <View key={index} style={styles.suggestionItem}>
+                  <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                  <Text style={styles.suggestionText}>{suggestion}</Text>
+                </View>
+              ))}
+            </View>
+            
+            <TouchableOpacity
+              style={styles.browseButton}
+              onPress={() => navigation.navigate('Courses')}
+            >
+              <Ionicons name="book" size={20} color="white" />
+              <Text style={styles.browseButtonText}>Browse Courses</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* AI Algorithm Selection */}
-        <View style={styles.section}>
+        {/* Show algorithm and filters only if user has sufficient data */}
+        {dataRequirements && dataRequirements.has_sufficient_data && (
+          <>
+            {/* AI Algorithm Selection */}
+            <View style={styles.algorithmSection}>
           <Text style={styles.sectionTitle}>Choose AI Algorithm</Text>
           <FlatList
             data={algorithms}
@@ -222,7 +408,7 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
         </View>
 
         {/* Filters */}
-        <View style={styles.section}>
+        <View style={styles.filtersSection}>
           <Text style={styles.sectionTitle}>Filters</Text>
           <View style={styles.filtersContainer}>
             <View style={styles.filterRow}>
@@ -254,7 +440,7 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
             <View style={styles.filterRow}>
               <Text style={styles.filterLabel}>Category:</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {categories.map((category) => (
+                {categoryNames.map((category) => (
                   <TouchableOpacity
                     key={category}
                     style={[
@@ -294,9 +480,9 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
         </View>
 
         {/* Recommendations List */}
-        <View style={styles.section}>
+        <View style={styles.recommendationsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recommended for You</Text>
+            <Text style={styles.sectionTitle}>{getRecommendationTitle()}</Text>
             <Text style={styles.recommendationsCount}>
               {recommendations.length} courses
             </Text>
@@ -304,7 +490,7 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
 
           {isLoading && recommendations.length === 0 ? (
             <View style={styles.loadingContainer}>
-              <Ionicons name="bulb" size={50} color="#667eea" />
+              <LoadingComponent visible={true} />
               <Text style={styles.loadingText}>AI is analyzing your preferences...</Text>
             </View>
           ) : error ? (
@@ -340,289 +526,13 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
             />
           )}
         </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    padding: 5,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  refreshButton: {
-    padding: 5,
-  },
-  section: {
-    backgroundColor: 'white',
-    marginTop: 10,
-    padding: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-  },
-  recommendationsCount: {
-    fontSize: 14,
-    color: '#666',
-  },
-  algorithmsList: {
-    paddingRight: 20,
-  },
-  algorithmCard: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 15,
-    marginRight: 15,
-    width: 150,
-  },
-  selectedAlgorithmCard: {
-    backgroundColor: '#667eea',
-  },
-  algorithmName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  selectedAlgorithmName: {
-    color: 'white',
-  },
-  algorithmDescription: {
-    fontSize: 12,
-    color: '#666',
-  },
-  selectedAlgorithmDescription: {
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  filtersContainer: {
-    gap: 15,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  filterLabel: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-    marginRight: 15,
-    minWidth: 80,
-  },
-  filterChip: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
-  },
-  selectedFilterChip: {
-    backgroundColor: '#667eea',
-  },
-  filterChipText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  selectedFilterChipText: {
-    color: 'white',
-  },
-  generateButtonContainer: {
-    padding: 20,
-  },
-  generateButton: {
-    backgroundColor: '#667eea',
-    borderRadius: 12,
-    paddingVertical: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  generateButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  recommendationsList: {
-    paddingBottom: 20,
-  },
-  recommendationCard: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  recommendationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    paddingBottom: 10,
-  },
-  rankBadge: {
-    backgroundColor: '#667eea',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  rankText: {
-    fontSize: 12,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  confidenceBadge: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  confidenceText: {
-    fontSize: 12,
-    color: 'white',
-    fontWeight: 'bold',
-    marginLeft: 4,
-  },
-  recommendationContent: {
-    padding: 15,
-    paddingTop: 0,
-  },
-  recommendationTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  recommendationInstructor: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 10,
-  },
-  recommendationMeta: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  metaText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  recommendationReason: {
-    fontSize: 13,
-    color: '#888',
-    fontStyle: 'italic',
-    marginBottom: 15,
-  },
-  recommendationFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  priceText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#667eea',
-  },
-  feedbackButtons: {
-    flexDirection: 'row',
-  },
-  feedbackButton: {
-    padding: 8,
-    marginLeft: 5,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 15,
-    textAlign: 'center',
-  },
-  errorContainer: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#ff6b6b',
-    marginTop: 15,
-    textAlign: 'center',
-  },
-  errorSubtext: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#667eea',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginTop: 20,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#666',
-    marginTop: 15,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-});
+// Styles are now handled by responsive styles
 
 export default RecommendationsScreen;
