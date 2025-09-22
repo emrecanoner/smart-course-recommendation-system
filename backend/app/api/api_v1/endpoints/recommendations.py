@@ -22,16 +22,26 @@ def get_recommendations(
     db: Session = Depends(get_db),
     current_user: User = Depends(security.get_current_user),
     limit: int = Query(10, ge=1, le=50, description="Number of recommendations to return"),
-    algorithm: str = Query("hybrid", description="Recommendation algorithm to use"),
+    algorithm: str = Query("hybrid", description="Recommendation algorithm to use (hybrid, neural_cf, context_aware, semantic)"),
+    learning_session: str = Query("focused", description="Learning session type (quick, focused, deep)"),
+    user_mood: str = Query("motivated", description="User mood (motivated, tired, curious, focused)"),
+    learning_goal: str = Query("skill_development", description="Learning goal (skill_development, career_change, hobby, certification)"),
+    available_time: int = Query(60, ge=5, le=480, description="Available time in minutes"),
+    device_type: str = Query("desktop", description="Device type (mobile, desktop, tablet)"),
 ) -> Any:
     """
-    Get personalized course recommendations for the current user.
+    Get personalized course recommendations for the current user with advanced AI features.
     
     Args:
         db: Database session
         current_user: Current authenticated user
         limit: Number of recommendations to return
         algorithm: Recommendation algorithm to use
+        learning_session: Type of learning session
+        user_mood: Current user mood
+        learning_goal: User's learning goal
+        available_time: Available time in minutes
+        device_type: Type of device being used
         
     Returns:
         List[RecommendationResponse]: List of recommended courses
@@ -39,10 +49,20 @@ def get_recommendations(
     recommendation_service = RecommendationService(db)
     
     try:
+        # Prepare context data for context-aware recommendations
+        context_data = {
+            'learning_session': learning_session,
+            'user_mood': user_mood,
+            'learning_goal': learning_goal,
+            'available_time': available_time,
+            'device_type': device_type
+        }
+        
         recommendations = recommendation_service.get_recommendations(
             user_id=current_user.id,
             limit=limit,
-            algorithm=algorithm
+            algorithm=algorithm,
+            context_data=context_data
         )
         return recommendations
     except Exception as e:

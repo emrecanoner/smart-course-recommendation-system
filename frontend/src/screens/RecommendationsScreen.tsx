@@ -41,12 +41,20 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
   const { recommendations, isLoading, error } = useSelector((state: RootState) => state.recommendations);
   const { categories } = useSelector((state: RootState) => state.courses);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('hybrid');
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('neural_cf');
   const [selectedFilters, setSelectedFilters] = useState({
     difficulty: '',
     category: '',
     maxDuration: '',
     contentType: '',
+  });
+  
+  // Context-aware parameters for advanced AI
+  const [contextParams, setContextParams] = useState({
+    learningSession: 'focused',
+    userMood: 'motivated',
+    learningGoal: 'skill_development',
+    deviceType: 'desktop',
   });
   const [dataRequirements, setDataRequirements] = useState<{
     has_sufficient_data: boolean;
@@ -70,10 +78,13 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
   const styles = getResponsiveRecommendationsStyles();
 
   const algorithms = [
-    { id: 'hybrid', name: 'Hybrid AI', description: 'Best overall recommendations' },
-    { id: 'collaborative', name: 'Collaborative', description: 'Based on similar users' },
-    { id: 'content', name: 'Content-Based', description: 'Based on course content' },
-    { id: 'popularity', name: 'Popularity', description: 'Trending courses' },
+    { id: 'neural_cf', name: '🧠 Neural AI', description: 'Deep learning recommendations' },
+    { id: 'semantic', name: '🔍 Semantic AI', description: 'Content understanding & NLP' },
+    { id: 'context_aware', name: '🎯 Context AI', description: 'Time & mood aware recommendations' },
+    { id: 'hybrid', name: '⚡ Hybrid AI', description: 'Best overall recommendations' },
+    { id: 'collaborative', name: '👥 Collaborative', description: 'Based on similar users' },
+    { id: 'content', name: '📚 Content-Based', description: 'Based on course content' },
+    { id: 'popularity', name: '🔥 Popularity', description: 'Trending courses' },
   ];
 
   const [difficultyLevels, setDifficultyLevels] = useState<string[]>([]);
@@ -163,6 +174,14 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
       limit: 20,
       algorithm: selectedAlgorithm,
     };
+
+    // Add context-aware parameters for advanced AI algorithms
+    if (['neural_cf', 'semantic', 'context_aware'].includes(selectedAlgorithm)) {
+      request.learning_session = contextParams.learningSession;
+      request.user_mood = contextParams.userMood;
+      request.learning_goal = contextParams.learningGoal;
+      request.device_type = contextParams.deviceType;
+    }
 
     if (selectedFilters.difficulty) {
       request.difficulty_level = selectedFilters.difficulty;
@@ -420,8 +439,90 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
           />
         </View>
 
+        {/* Context Parameters for Advanced AI */}
+        {['neural_cf', 'semantic', 'context_aware'].includes(selectedAlgorithm) && (
+          <View style={styles.filtersSection}>
+            <Text style={styles.sectionTitle}>🎯 AI Context Settings</Text>
+            <View style={styles.filtersContainer}>
+              {/* Learning Session */}
+              <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Learning Session:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {['quick', 'focused', 'deep'].map((session) => (
+                  <TouchableOpacity
+                    key={session}
+                    style={[
+                      styles.filterChip,
+                      contextParams.learningSession === session && styles.selectedFilterChip
+                    ]}
+                    onPress={() => setContextParams(prev => ({ ...prev, learningSession: session }))}
+                  >
+                    <Text style={[
+                      styles.filterChipText,
+                      contextParams.learningSession === session && styles.selectedFilterChipText
+                    ]}>
+                      {session.charAt(0).toUpperCase() + session.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+            
+            {/* Mood */}
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Mood:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {['motivated', 'tired', 'curious', 'focused'].map((mood) => (
+                  <TouchableOpacity
+                    key={mood}
+                    style={[
+                      styles.filterChip,
+                      contextParams.userMood === mood && styles.selectedFilterChip
+                    ]}
+                    onPress={() => setContextParams(prev => ({ ...prev, userMood: mood }))}
+                  >
+                    <Text style={[
+                      styles.filterChipText,
+                      contextParams.userMood === mood && styles.selectedFilterChipText
+                    ]}>
+                      {mood.charAt(0).toUpperCase() + mood.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+            
+            {/* Goal */}
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Goal:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {['skill_development', 'career_change', 'hobby', 'certification'].map((goal) => (
+                  <TouchableOpacity
+                    key={goal}
+                    style={[
+                      styles.filterChip,
+                      contextParams.learningGoal === goal && styles.selectedFilterChip
+                    ]}
+                    onPress={() => setContextParams(prev => ({ ...prev, learningGoal: goal }))}
+                  >
+                    <Text style={[
+                      styles.filterChipText,
+                      contextParams.learningGoal === goal && styles.selectedFilterChipText
+                    ]}>
+                      {goal.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+            
+            </View>
+          </View>
+        )}
+
         {/* Filters */}
-        <View style={styles.filtersSection}>
+        {dataRequirements && dataRequirements.has_sufficient_data && (
+          <View style={styles.filtersSection}>
           <Text style={styles.sectionTitle}>Filters</Text>
           <View style={styles.filtersContainer}>
             <View style={styles.filterRow}>
@@ -477,8 +578,10 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
             </View>
           </View>
         </View>
+        )}
 
         {/* Generate Button */}
+        {dataRequirements && dataRequirements.has_sufficient_data && (
         <View style={styles.generateButtonContainer}>
           <TouchableOpacity
             style={styles.generateButton}
@@ -491,8 +594,10 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
             </Text>
           </TouchableOpacity>
         </View>
+        )}
 
         {/* Recommendations List */}
+        {dataRequirements && dataRequirements.has_sufficient_data && (
         <View style={styles.recommendationsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{getRecommendationTitle()}</Text>
@@ -538,6 +643,7 @@ const RecommendationsScreen: React.FC<RecommendationsScreenProps> = ({ navigatio
             />
           )}
         </View>
+        )}
           </>
         )}
       </ScrollView>

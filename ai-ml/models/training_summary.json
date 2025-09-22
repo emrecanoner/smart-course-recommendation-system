@@ -1,0 +1,51 @@
+{
+  "start_time": "2025-09-22T11:46:41.324687",
+  "models": {
+    "neural_cf": {
+      "model_path": "ai-ml/models/neural_cf_model.pth",
+      "training_results": {
+        "train_losses": [
+          0.9133979678153992,
+          0.8762346506118774,
+          0.8251610994338989,
+          0.7977766990661621,
+          0.8383839130401611,
+          0.791937530040741,
+          0.7501724362373352,
+          0.7923638820648193,
+          0.7818474769592285,
+          0.8093886375427246,
+          0.7727388739585876
+        ],
+        "val_losses": [
+          0.6967689990997314,
+          0.7016422152519226,
+          0.7094604969024658,
+          0.7152311205863953,
+          0.7203008532524109,
+          0.7280505895614624,
+          0.733635663986206,
+          0.7426060438156128,
+          0.7554498910903931,
+          0.7628841400146484,
+          0.7723617553710938
+        ],
+        "best_val_loss": 0.6967689990997314,
+        "epochs_trained": 11
+      },
+      "status": "success"
+    },
+    "semantic": {
+      "error": "skill_extractor_component() missing 1 required positional argument: 'name'",
+      "status": "failed"
+    },
+    "context_aware": {
+      "context_path": "ai-ml/models/context_patterns.json",
+      "interactions_analyzed": 326,
+      "context_patterns": 8,
+      "status": "success"
+    }
+  },
+  "end_time": "2025-09-22T11:46:46.185603",
+  "status": "completed"
+}

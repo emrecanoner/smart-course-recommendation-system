@@ -78,6 +78,11 @@ export interface RecommendationRequest {
   difficulty_level?: string;
   max_duration_hours?: number;
   content_type?: string;
+  // Context-aware parameters for advanced AI
+  learning_session?: string;
+  user_mood?: string;
+  learning_goal?: string;
+  device_type?: string;
 }
 
 export interface Recommendation {

@@ -1,0 +1,16 @@
+{
+  "evaluation_time": "2025-09-22T11:46:46.185603",
+  "models": {
+    "neural_cf": {
+      "total_test_interactions": 87,
+      "unique_users": 2,
+      "unique_courses": 25,
+      "status": "evaluated"
+    },
+    "context_aware": {
+      "time_patterns_count": 8,
+      "day_patterns_count": 8,
+      "status": "evaluated"
+    }
+  }
+}

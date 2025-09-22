@@ -51,15 +51,17 @@ class RecommendationService:
         self, 
         user_id: int, 
         limit: int = 10, 
-        algorithm: str = "hybrid"
+        algorithm: str = "hybrid",
+        context_data: Optional[Dict] = None
     ) -> List[RecommendationResponse]:
         """
-        Get personalized recommendations for a user.
+        Get personalized recommendations for a user with advanced AI features.
         
         Args:
             user_id: User ID
             limit: Number of recommendations to return
-            algorithm: Algorithm to use (collaborative, content-based, hybrid)
+            algorithm: Algorithm to use (collaborative, content-based, hybrid, neural_cf, context_aware, semantic)
+            context_data: Additional context data for context-aware recommendations
             
         Returns:
             List[RecommendationResponse]: List of recommendations
@@ -67,8 +69,13 @@ class RecommendationService:
         # Use AI engine if available
         if self.ai_engine:
             try:
-                logger.info(f"Using AI engine for recommendations for user {user_id}")
-                return self.ai_engine.get_recommendations(user_id, limit, algorithm)
+                logger.info(f"Using AI engine for recommendations for user {user_id} with algorithm {algorithm}")
+                return self.ai_engine.get_recommendations(
+                    user_id=user_id, 
+                    limit=limit, 
+                    algorithm=algorithm,
+                    context_data=context_data
+                )
             except Exception as e:
                 logger.error(f"AI engine failed, falling back to basic recommendations: {e}")
         

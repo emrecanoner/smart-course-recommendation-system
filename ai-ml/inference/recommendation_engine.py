@@ -16,6 +16,29 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.decomposition import TruncatedSVD
 import re
 import pickle
+import signal
+from contextlib import contextmanager
+
+# Import advanced AI components
+try:
+    # Add current directory to path for local imports
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    if current_dir not in sys.path:
+        sys.path.append(current_dir)
+    
+    # Import from training directory
+    training_path = os.path.join(os.path.dirname(__file__), '..', 'training')
+    if training_path not in sys.path:
+        sys.path.append(training_path)
+    
+    from neural_collaborative_filtering import NeuralCFRecommendationEngine
+    from context_aware_engine import ContextAwareRecommendationEngine, UserContext
+    from real_time_learning import RealTimeLearningEngine, UserFeedback
+    from semantic_understanding import SemanticUnderstandingEngine
+    ADVANCED_AI_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"Advanced AI components not available: {e}")
+    ADVANCED_AI_AVAILABLE = False
 
 # Add backend path for imports
 backend_path = os.path.join(os.path.dirname(__file__), '..', '..', 'backend')
@@ -29,6 +52,24 @@ from app.schemas.recommendation import RecommendationResponse
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+# Timeout context manager for AI operations
+@contextmanager
+def timeout_context(seconds):
+    """Context manager for timeout operations."""
+    def timeout_handler(signum, frame):
+        raise TimeoutError(f"Operation timed out after {seconds} seconds")
+    
+    # Set the signal handler
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(seconds)
+    
+    try:
+        yield
+    finally:
+        # Restore the old signal handler
+        signal.signal(signal.SIGALRM, old_handler)
+        signal.alarm(0)
 
 
 class AIRecommendationEngine:
@@ -53,6 +94,28 @@ class AIRecommendationEngine:
         self.course_tfidf_matrix = None
         self.course_ids = None
         self.svd_model = None
+        
+        # Initialize advanced AI components
+        self.neural_cf_engine = None
+        self.context_aware_engine = None
+        self.real_time_learning = None
+        self.semantic_engine = None
+        
+        if ADVANCED_AI_AVAILABLE:
+            try:
+                self.context_aware_engine = ContextAwareRecommendationEngine()
+                self.real_time_learning = RealTimeLearningEngine()
+                self.semantic_engine = SemanticUnderstandingEngine()
+                
+                # Try to load pre-trained neural CF model
+                neural_cf_path = os.path.join('ai-ml', 'models', 'neural_cf_model.pth')
+                if os.path.exists(neural_cf_path):
+                    self.neural_cf_engine = NeuralCFRecommendationEngine(neural_cf_path)
+                
+                logger.info("Advanced AI components initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize advanced AI components: {e}")
+        
         self._initialize_ml_models()
     
     def _initialize_ml_models(self):
@@ -114,42 +177,63 @@ class AIRecommendationEngine:
         difficulty_level: Optional[str] = None,
         categories: Optional[List[str]] = None,
         max_duration_hours: Optional[int] = None,
-        content_type: Optional[str] = None
+        content_type: Optional[str] = None,
+        context_data: Optional[Dict] = None
     ) -> List[RecommendationResponse]:
         """
-        Get personalized recommendations for a user.
+        Get personalized recommendations for a user with advanced AI features.
         
         Args:
             user_id: User ID
             limit: Number of recommendations to return
-            algorithm: Algorithm to use (collaborative, content-based, hybrid)
+            algorithm: Algorithm to use (collaborative, content-based, hybrid, neural_cf, context_aware)
+            context_data: Additional context data for context-aware recommendations
             
         Returns:
             List[RecommendationResponse]: List of recommendations
         """
         try:
-            # Check if user has enough data for AI recommendations
-            if not self._has_sufficient_data(user_id):
-                logger.info(f"User {user_id} has insufficient data for AI recommendations")
-                return self._get_fallback_recommendations(user_id, limit)
+            # Use timeout context for AI operations (5 minutes)
+            with timeout_context(300):
+                # Check if user has enough data for AI recommendations
+                if not self._has_sufficient_data(user_id):
+                    logger.info(f"User {user_id} has insufficient data for AI recommendations")
+                    return self._get_fallback_recommendations(user_id, limit)
+                
+                # Get user profile and preferences
+                user_profile = self._get_user_profile(user_id)
+                
+                # Generate recommendations based on algorithm
+                if algorithm == "neural_cf" and self.neural_cf_engine:
+                    recommendations = self._neural_collaborative_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+                elif algorithm == "context_aware" and self.context_aware_engine:
+                    recommendations = self._context_aware_recommendations(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type, context_data)
+                elif algorithm == "semantic" and self.semantic_engine:
+                    recommendations = self._semantic_recommendations(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+                elif algorithm == "collaborative":
+                    recommendations = self._collaborative_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+                elif algorithm == "content":
+                    recommendations = self._content_based_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+                elif algorithm == "hybrid":
+                    recommendations = self._hybrid_recommendations(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+                elif algorithm == "popularity":
+                    recommendations = self._popularity_based_recommendations(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+                else:
+                    recommendations = self._hybrid_recommendations(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
             
-            # Get user profile and preferences
-            user_profile = self._get_user_profile(user_id)
+            # Apply context-aware enhancement if available
+            if self.context_aware_engine and context_data:
+                recommendations = self._enhance_with_context(recommendations, context_data)
             
-            # Generate recommendations based on algorithm
-            if algorithm == "collaborative":
-                recommendations = self._collaborative_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
-            elif algorithm == "content":
-                recommendations = self._content_based_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
-            elif algorithm == "hybrid":
-                recommendations = self._hybrid_recommendations(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
-            elif algorithm == "popularity":
-                recommendations = self._popularity_based_recommendations(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
-            else:
-                recommendations = self._hybrid_recommendations(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+            # Record feedback for real-time learning
+            if self.real_time_learning:
+                self._record_recommendation_feedback(user_id, recommendations)
             
             return recommendations
             
+        except TimeoutError as e:
+            logger.error(f"AI recommendation timeout for user {user_id}: {e}")
+            return self._get_fallback_recommendations(user_id, limit)
         except Exception as e:
             logger.error(f"Error generating AI recommendations for user {user_id}: {e}")
             return self._get_fallback_recommendations(user_id, limit)
@@ -1212,3 +1296,245 @@ class AIRecommendationEngine:
         except Exception as e:
             logger.error(f"Error recording feedback: {e}")
             self.db.rollback()
+    
+    def _neural_collaborative_filtering(self, user_id: int, limit: int, user_profile: Dict, difficulty_level: Optional[str] = None, categories: Optional[List[str]] = None, max_duration_hours: Optional[int] = None, content_type: Optional[str] = None) -> List[RecommendationResponse]:
+        """Neural Collaborative Filtering recommendations."""
+        try:
+            if not self.neural_cf_engine:
+                return self._collaborative_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+            
+            # Get user's interacted courses to exclude
+            user_interactions = self.db.query(UserInteraction.course_id).filter(
+                UserInteraction.user_id == user_id
+            ).all()
+            exclude_courses = [interaction.course_id for interaction in user_interactions]
+            
+            # Get neural CF recommendations with error handling
+            try:
+                neural_recs = self.neural_cf_engine.get_recommendations(
+                    user_id=user_id,
+                    num_recommendations=limit * 2,  # Get more for filtering
+                    exclude_courses=exclude_courses
+                )
+            except Exception as e:
+                logger.warning(f"Neural CF failed for user {user_id}, falling back to collaborative filtering: {e}")
+                return self._collaborative_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+            
+            # Convert to RecommendationResponse format
+            recommendations = []
+            for course_id, score in neural_recs:
+                course = self.db.query(Course).filter(Course.id == course_id).first()
+                if course and course.is_active:
+                    # Apply filters
+                    if self._matches_filters(course, difficulty_level, categories, max_duration_hours, content_type):
+                        confidence = min(0.95, max(0.6, score * 1.2))  # Boost neural CF scores
+                        recommendations.append(self._create_recommendation_response(
+                            course, confidence, "Recommended by advanced neural collaborative filtering"
+                        ))
+                        
+                        if len(recommendations) >= limit:
+                            break
+            
+            return recommendations
+            
+        except Exception as e:
+            logger.error(f"Error in neural collaborative filtering: {e}")
+            return self._collaborative_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+    
+    def _context_aware_recommendations(self, user_id: int, limit: int, user_profile: Dict, difficulty_level: Optional[str] = None, categories: Optional[List[str]] = None, max_duration_hours: Optional[int] = None, content_type: Optional[str] = None, context_data: Optional[Dict] = None) -> List[RecommendationResponse]:
+        """Context-aware recommendations."""
+        try:
+            if not self.context_aware_engine:
+                return self._hybrid_recommendations(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+            
+            # Get base recommendations
+            base_recommendations = self._hybrid_recommendations(user_id, limit * 2, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+            
+            # Extract context from request
+            context = self.context_aware_engine.extract_context_from_request(context_data or {})
+            
+            # Convert to dict format for context engine
+            rec_dicts = []
+            for rec in base_recommendations:
+                course = self.db.query(Course).filter(Course.id == rec.course_id).first()
+                if course:
+                    rec_dict = {
+                        'course_id': course.id,
+                        'title': course.title,
+                        'description': course.description,
+                        'difficulty_level': course.difficulty_level,
+                        'content_type': course.content_type,
+                        'duration_hours': course.duration_hours,
+                        'confidence_score': rec.confidence_score,
+                        'recommendation_reason': rec.recommendation_reason
+                    }
+                    rec_dicts.append(rec_dict)
+            
+            # Enhance with context
+            enhanced_recs = self.context_aware_engine.enhance_recommendations_with_context(rec_dicts, context)
+            
+            # Convert back to RecommendationResponse format
+            recommendations = []
+            for rec_dict in enhanced_recs[:limit]:
+                course = self.db.query(Course).filter(Course.id == rec_dict['course_id']).first()
+                if course:
+                    recommendations.append(self._create_recommendation_response(
+                        course, rec_dict['confidence_score'], 
+                        f"Context-aware: {rec_dict['recommendation_reason']}"
+                    ))
+            
+            return recommendations
+            
+        except Exception as e:
+            logger.error(f"Error in context-aware recommendations: {e}")
+            return self._hybrid_recommendations(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+    
+    def _semantic_recommendations(self, user_id: int, limit: int, user_profile: Dict, difficulty_level: Optional[str] = None, categories: Optional[List[str]] = None, max_duration_hours: Optional[int] = None, content_type: Optional[str] = None) -> List[RecommendationResponse]:
+        """Semantic understanding-based recommendations."""
+        try:
+            if not self.semantic_engine:
+                return self._content_based_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+            
+            # Get user's learning goals and preferences
+            user_skills = user_profile.get('skills_developed', [])
+            learning_goals = user_profile.get('learning_goals', [])
+            
+            # Create query text from user preferences
+            query_parts = []
+            if user_skills:
+                query_parts.extend(user_skills)
+            if learning_goals:
+                query_parts.extend(learning_goals)
+            if user_profile.get('preferred_categories'):
+                query_parts.extend(user_profile['preferred_categories'])
+            
+            query_text = ' '.join(query_parts)
+            
+            if not query_text:
+                return self._content_based_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+            
+            # Get all courses for semantic matching
+            courses = self.db.query(Course).filter(Course.is_active == True).all()
+            
+            # Find semantic matches
+            course_embeddings = {}
+            for course in courses:
+                course_text = f"{course.title} {course.description or ''} {' '.join(course.skills or [])}"
+                embedding = self.semantic_engine._generate_semantic_embedding(course_text)
+                if embedding is not None:
+                    course_embeddings[course.id] = embedding
+            
+            # Get semantic matches
+            semantic_matches = self.semantic_engine.find_semantic_matches(
+                query_text, course_embeddings, top_k=limit * 2
+            )
+            
+            # Convert to recommendations
+            recommendations = []
+            for course_id, similarity_score in semantic_matches:
+                course = self.db.query(Course).filter(Course.id == course_id).first()
+                if course and self._matches_filters(course, difficulty_level, categories, max_duration_hours, content_type):
+                    # Check if user hasn't interacted with this course
+                    user_interactions = self.db.query(UserInteraction.course_id).filter(
+                        UserInteraction.user_id == user_id,
+                        UserInteraction.course_id == course_id
+                    ).first()
+                    
+                    if not user_interactions:
+                        confidence = min(0.95, max(0.6, similarity_score * 1.3))  # Boost semantic scores
+                        recommendations.append(self._create_recommendation_response(
+                            course, confidence, "Semantically matches your learning goals and interests"
+                        ))
+                        
+                        if len(recommendations) >= limit:
+                            break
+            
+            return recommendations
+            
+        except Exception as e:
+            logger.error(f"Error in semantic recommendations: {e}")
+            return self._content_based_filtering(user_id, limit, user_profile, difficulty_level, categories, max_duration_hours, content_type)
+    
+    def _enhance_with_context(self, recommendations: List[RecommendationResponse], context_data: Dict) -> List[RecommendationResponse]:
+        """Enhance recommendations with context-aware scoring."""
+        try:
+            if not self.context_aware_engine:
+                return recommendations
+            
+            # Extract context
+            context = self.context_aware_engine.extract_context_from_request(context_data)
+            
+            # Convert to dict format
+            rec_dicts = []
+            for rec in recommendations:
+                course = self.db.query(Course).filter(Course.id == rec.course_id).first()
+                if course:
+                    rec_dict = {
+                        'course_id': course.id,
+                        'title': course.title,
+                        'description': course.description,
+                        'difficulty_level': course.difficulty_level,
+                        'content_type': course.content_type,
+                        'duration_hours': course.duration_hours,
+                        'confidence_score': rec.confidence_score,
+                        'recommendation_reason': rec.recommendation_reason
+                    }
+                    rec_dicts.append(rec_dict)
+            
+            # Enhance with context
+            enhanced_recs = self.context_aware_engine.enhance_recommendations_with_context(rec_dicts, context)
+            
+            # Convert back to RecommendationResponse format
+            enhanced_recommendations = []
+            for rec_dict in enhanced_recs:
+                course = self.db.query(Course).filter(Course.id == rec_dict['course_id']).first()
+                if course:
+                    enhanced_recommendations.append(self._create_recommendation_response(
+                        course, rec_dict['confidence_score'], 
+                        f"Context-enhanced: {rec_dict['recommendation_reason']}"
+                    ))
+            
+            return enhanced_recommendations
+            
+        except Exception as e:
+            logger.error(f"Error enhancing with context: {e}")
+            return recommendations
+    
+    def _record_recommendation_feedback(self, user_id: int, recommendations: List[RecommendationResponse]):
+        """Record recommendation feedback for real-time learning."""
+        try:
+            if not self.real_time_learning:
+                return
+            
+            # Record that recommendations were generated
+            for rec in recommendations:
+                feedback = UserFeedback(
+                    user_id=user_id,
+                    course_id=rec.course_id,
+                    feedback_type='recommended',
+                    context={'confidence_score': rec.confidence_score}
+                )
+                self.real_time_learning.record_feedback(feedback)
+                
+        except Exception as e:
+            logger.error(f"Error recording recommendation feedback: {e}")
+    
+    def _matches_filters(self, course: Course, difficulty_level: Optional[str] = None, categories: Optional[List[str]] = None, max_duration_hours: Optional[int] = None, content_type: Optional[str] = None) -> bool:
+        """Check if course matches the specified filters."""
+        # Apply difficulty level filter (case-insensitive)
+        if difficulty_level and course.difficulty_level and course.difficulty_level.lower() != difficulty_level.lower():
+            return False
+        
+        # Apply category filter (case-insensitive)
+        if categories and course.category and course.category.name.lower() not in [c.lower() for c in categories]:
+            return False
+        
+        # Apply duration filter
+        if max_duration_hours and course.duration_hours and course.duration_hours > max_duration_hours:
+            return False
+        
+        # Apply content type filter (case-insensitive)
+        if content_type and course.content_type and course.content_type.lower() != content_type.lower():
+            return False
+        
+        return True

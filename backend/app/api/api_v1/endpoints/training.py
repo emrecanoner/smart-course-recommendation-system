@@ -17,7 +17,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'ai-ml', 'training'))
 
 try:
-    from model_trainer import ModelTrainer
+    from train_models import ModelTrainer
     TRAINING_AVAILABLE = True
 except ImportError as e:
     logging.warning(f"Training modules not available: {e}")

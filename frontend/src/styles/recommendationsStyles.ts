@@ -202,6 +202,7 @@ const recommendationsBaseStyles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 15,
   },
   filterLabel: {
     fontSize: recommendationsResponsiveDimensions.metaTextSize.mobile,
@@ -675,6 +676,11 @@ const recommendationsDesktopStyles = StyleSheet.create({
   algorithmDescription: {
     fontSize: recommendationsResponsiveDimensions.metaTextSize.desktop - 2,
   },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   filterLabel: {
     fontSize: recommendationsResponsiveDimensions.metaTextSize.desktop,
   },
@@ -784,5 +790,6 @@ export const getResponsiveRecommendationsStyles = () => {
     }
   }
   
+
   return styles;
 };

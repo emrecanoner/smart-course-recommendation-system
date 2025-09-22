@@ -67,5 +67,7 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True,
-        log_level="debug"
+        log_level="debug",
+        timeout_keep_alive=300,  # 5 minutes timeout for AI recommendations
+        timeout_graceful_shutdown=30
     )
