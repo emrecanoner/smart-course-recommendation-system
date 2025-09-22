@@ -491,9 +491,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### 🆘 Getting Help
 1. **Check Documentation**: Start with [how_to_run.md](how_to_run.md)
-2. **Search Issues**: Look through existing [GitHub Issues](https://github.com/your-repo/issues)
 3. **Create Issue**: Provide detailed information about your problem
-4. **Join Community**: [Discord](https://discord.gg/your-invite) for real-time help
 
 ### 🐛 Troubleshooting
 - **Database Issues**: Check [Database Setup](how_to_run.md#database-setup)

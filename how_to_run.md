@@ -562,11 +562,6 @@ uv run alembic downgrade -1
 - **Discussions**: [GitHub Discussions](https://github.com/emrecanoner/smart-course-recommendation-system/discussions)
 - **Wiki**: [Project Wiki](https://github.com/emrecanoner/smart-course-recommendation-system/wiki)
 
-### Community
-- **Discord**: [Join our Discord](https://discord.gg/your-invite)
-- **Twitter**: [@YourProject](https://twitter.com/yourproject)
-- **Blog**: [Project Blog](https://yourproject.com/blog)
-
 ---
 
 ## 🎉 Success!
