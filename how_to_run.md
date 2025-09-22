@@ -135,15 +135,29 @@ npm install -g expo-cli
 
 ## 🚀 Running the Application
 
-### 1. Database Migration
+### 1. Database Migration & Data Setup
 ```bash
 # Run database migrations
 cd backend
 uv run alembic upgrade head
 
-# Seed initial data (optional)
-uv run python scripts/seed_data.py
+# Add sample courses to database (creates courses, categories, users)
+cd ../database/scripts
+uv run python dataset.py
+
+# Update analytics schema (required for AI recommendations)
+# This populates analytics.user_learning_profile, analytics.course_performance, etc.
+cd ../../backend
+uv run python scripts/update_analytics.py
 ```
+
+**Important Notes:**
+- **`dataset.py`**: Creates sample courses, categories, and users for testing
+- **`update_analytics.py`**: Populates analytics schema tables (like a data warehouse)
+  - `analytics.user_learning_profile`: User behavior analytics
+  - `analytics.course_performance`: Course performance metrics
+  - `analytics.recommendation_analytics`: AI recommendation analytics
+  - `analytics.system_performance`: System-wide performance metrics
 
 ### 2. Train AI Models
 ```bash
@@ -251,6 +265,16 @@ SELECT * FROM recommendation_logs ORDER BY created_at DESC LIMIT 10;
 
 # Check user interactions
 SELECT COUNT(*) FROM user_interactions;
+
+# Check analytics schema (data warehouse)
+SELECT COUNT(*) FROM analytics.user_learning_profile;
+SELECT COUNT(*) FROM analytics.course_performance;
+SELECT COUNT(*) FROM analytics.recommendation_analytics;
+
+# Check user learning profiles
+SELECT user_id, engagement_score, learning_velocity, preferred_categories 
+FROM analytics.user_learning_profile 
+ORDER BY engagement_score DESC LIMIT 5;
 ```
 
 ### 3. Performance Monitoring
@@ -351,6 +375,20 @@ uv run python training/train_models.py --force-retrain
 
 # Check model files
 ls -la models/
+```
+
+#### 2.1. Analytics Data Issues
+```bash
+# If AI recommendations are not working, update analytics data
+cd backend
+uv run python scripts/update_analytics.py
+
+# Check analytics tables
+psql -h localhost -U your_username -d course_recommendation -c "
+SELECT COUNT(*) FROM analytics.user_learning_profile;
+SELECT COUNT(*) FROM analytics.course_performance;
+SELECT COUNT(*) FROM analytics.recommendation_analytics;
+"
 ```
 
 #### 3. Frontend Issues
@@ -482,7 +520,12 @@ git push origin feature/new-algorithm
 cd ai-ml
 uv run python training/train_models.py --incremental
 
+# Update analytics data (if new user interactions exist)
+cd ../backend
+uv run python scripts/update_analytics.py
+
 # Test new models
+cd ../ai-ml
 uv run python -c "
 from inference.recommendation_engine import AIRecommendationEngine
 # Test new model functionality

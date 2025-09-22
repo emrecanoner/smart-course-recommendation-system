@@ -177,9 +177,13 @@ uv run alembic upgrade head
 cd ../ai-ml
 uv run python training/train_models.py
 
-# Seed sample data
-cd ../backend
-uv run python scripts/seed_data.py
+# Add sample courses to database
+cd ../database/scripts
+uv run python dataset.py
+
+# Update analytics schema (required for AI recommendations)
+cd ../../backend
+uv run python scripts/update_analytics.py
 ```
 
 ### 5. Start Services
